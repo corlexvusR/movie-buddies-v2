@@ -1,0 +1,145 @@
+# Spring Boot는 시작할 때 이 파일을 읽어서 모든 설정을 자동으로 구성한다.
+
+spring:
+  application:
+    name: moviebuddies
+
+  profiles:
+    active: dev
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/moviebuddies
+    username: ${DB_USER:moviebuddies}
+    password: ${DB_PASSWORD:password}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+    open-in-view: false
+
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000  # 10분
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+jwt:
+  secret: ${JWT_SECRET:mySecretKeyForJWTTokenGenerationThatShouldBeLongEnoughAndSecure}
+  expiration: 86400000  # 24시간 (밀리초)
+  refresh-expiration: 604800000  # 7일
+
+file:
+  upload-dir: ${user.home}/moviebuddies/uploads
+  profile-dir: ${file.upload-dir}/profile-images
+  chat-dir: ${file.upload-dir}/chat-images
+
+tmdb:
+  api-key: ${TMDB_API_KEY:your-tmdb-api-key}
+  base-url: https://api.themoviedb.org/3
+  image-url: https://image.tmdb.org/t/p/w500
+
+logging:
+  level:
+    com.moviebuddies: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} - %msg%n'
+    file: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
+  file:
+    name: logs/application.log
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  packages-to-scan: com.moviebuddies.controller
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/moviebuddies
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  redis:
+    host: redis
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.moviebuddies: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+  file:
+    name: /var/log/moviebuddies/application.log
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+
+  redis:
+    host: localhost
+    port: 6370  # 다른 포트 사용
+
+jwt:
+  secret: testSecretKeyForJWTTokenGeneration
+  expiration: 3600000  # 1시간
