@@ -1,3 +1,4 @@
+### Spring Boot Generated Files ###
 HELP.md
 .gradle
 build/
@@ -35,3 +36,116 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Java ###
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+replay_pid*
+
+### Environment Variables & Configuration ###
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+application-local.yml
+application-secret.yml
+**/application-local.properties
+**/application-secret.properties
+
+### Database ###
+*.db
+*.sqlite
+*.sqlite3
+/data/
+/database/
+*.sql.backup
+
+### Logs ###
+/logs/
+*.log
+*.log.*
+log/
+spring.log
+logback.log
+
+### File Uploads & Media ###
+/uploads/
+/upload/
+/static/uploads/
+/media/
+/tmp/
+/temp/
+*.tmp
+*.temp
+
+### SSL Certificates & Keys ###
+*.jks
+*.p12
+*.key
+*.pem
+*.crt
+*.cert
+keystore/
+certificates/
+
+### JWT & Security ###
+jwt-secret.txt
+private-key.pem
+public-key.pem
+
+### Docker ###
+**/target/docker/
+docker-compose.override.yml
+.dockerignore
+
+### Testing ###
+/test-results/
+/coverage/
+*.coverage
+.nyc_output
+junit-reports/
+allure-results/
+/test-output/
+
+### Spring Boot DevTools ###
+spring-boot-devtools.properties
+
+### Redis Dump ###
+dump.rdb
+appendonly.aof
+
+### Backup Files ###
+*.backup
+*.bak
+*.swp
+*.swo
+*~
+
+### OS Generated Files ###
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+### Monitoring & Profiling ###
+*.hprof
+*.prof
+gc.log*
+
+### Custom Application Files ###
+/scripts/local/
+/config/local/
+/resources/local/
