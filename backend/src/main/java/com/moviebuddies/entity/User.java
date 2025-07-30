@@ -73,7 +73,7 @@ public class User {
      */
     @Column(name = "is_active")
     @Builder.Default
-    private boolean isActive = true;
+    private Boolean isActive = true;
 
     /**
      * 계정 생성 시간
