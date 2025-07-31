@@ -1,0 +1,93 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: moviebuddies-postgres-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-moviebuddies}
+      POSTGRES_USER: ${POSTGRES_USER:-moviebuddies}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d:ro
+    networks:
+      - moviebuddies-prod-network
+    restart: always
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-moviebuddies} -d ${POSTGRES_DB:-moviebuddies}",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # 프로덕션에서는 포트 노출하지 않음 (보안)
+    # ports를 제거하여 외부 접근 차단
+
+  redis:
+    image: redis:7-alpine
+    container_name: moviebuddies-redis-prod
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - moviebuddies-prod-network
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "auth", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: moviebuddies-backend-prod
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-moviebuddies}
+      - DB_USER=${POSTGRES_USER:-moviebuddies}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - TZ=Asia/Seoul
+    volumes:
+      - app_prod_uploads:/app/uploads
+      - app_prod_logs:/var/log/moviebuddies
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - moviebuddies-prod-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+  app_prod_uploads:
+    driver: local
+  app_prod_logs:
+    driver: local
+
+networks:
+  moviebuddies-prod-network:
+    driver: bridge
