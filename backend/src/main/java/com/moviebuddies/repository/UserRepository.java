@@ -112,4 +112,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u WHERE u.isActive = true AND u.lastLoginAt IS NOT NULL " + "ORDER BY u.lastLoginAt DESC")
     Page<User> findActiveUsersOrderByLastLogin(Pageable pageable);
+
+    /**
+     * 특정 사용자를 제외한 모든 활성 사용자 조회
+     * 사용자 검색에서 현재 사용자를 검색에서 제외할 때 사용
+     *
+     * @param excludeUserId 제외할 사용자 ID
+     * @param pageable 페이징 정보
+     * @return 제외한 사용자를 제외한 활성 사용자 목록 (페이징)
+     */
+    @Query("SELECT u FROM User u WHERE u.isActive = true AND u.id != : excludeUserId " + "ORDER BY u.createAt DESC")
+    Page<User> findAllActiveUsersExcludingUser(@Param("excludeUserId") Long excludeUserId, Pageable pageable);
 }
