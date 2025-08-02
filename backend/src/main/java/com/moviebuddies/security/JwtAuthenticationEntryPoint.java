@@ -37,8 +37,12 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-    // JSON 응답 생성을 위한 ObjectMapper
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // Spring이 자동 설정한 ObjectMapper Bean을 주입받음
+    private final ObjectMapper objectMapper;
+
+    public JwtAuthenticationEntryPoint(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * 인증 실패시 호출되는 메서드

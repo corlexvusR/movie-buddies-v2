@@ -89,7 +89,19 @@ public class SecurityConfig {
                         // 인증 없이 접근 가능한 공개 엔드포인트
                         .requestMatchers("/auth/**").permitAll()    // 로그인, 회원가입
                         .requestMatchers("/movie/**").permitAll()   // 영화 정보 (공개)
-                        .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()  // API 문서
+
+                        // Swagger UI 관련 경로
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/swagger-ui.html").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-resources/**").permitAll()
+                        .requestMatchers("/webjars/**").permitAll()
+
+                        // Actuator 헬스체크
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/info").permitAll()
+
                         .requestMatchers("/ws/**").permitAll()  // WebSocket 연결
                         .requestMatchers("/files/**").permitAll()   // 파일 업로드/다운로드
 

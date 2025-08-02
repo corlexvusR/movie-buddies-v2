@@ -121,6 +121,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param pageable 페이징 정보
      * @return 제외한 사용자를 제외한 활성 사용자 목록 (페이징)
      */
-    @Query("SELECT u FROM User u WHERE u.isActive = true AND u.id != : excludeUserId " + "ORDER BY u.createAt DESC")
+    @Query("SELECT u FROM User u WHERE u.isActive = true AND u.id != :excludeUserId")
     Page<User> findAllActiveUsersExcludingUser(@Param("excludeUserId") Long excludeUserId, Pageable pageable);
 }
