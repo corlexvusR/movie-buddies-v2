@@ -1,0 +1,101 @@
+# 운영 환경 설정 (application-prod.yml)
+spring:
+  # 운영 환경 데이터베이스
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://postgres:5432/moviebuddies}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # 운영 환경 JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: validate # 운영 환경에서는 검증만
+    show-sql: false
+    properties:
+      hibernate:
+        generate_statistics: false
+        jdbc:
+          batch_size: 50
+
+  # 운영 환경 Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+
+# 운영 환경 서버 설정
+server:
+  port: ${SERVER_PORT:8080}
+  compression:
+    enabled: true
+  http2:
+    enabled: true
+
+# 운영 환경 보안 강화
+jwt:
+  secret: ${JWT_SECRET} # 환경변수에서 필수로 가져오기
+  access-token-expiration: 1800000 # 30분 (보안 강화)
+  refresh-token-expiration: 604800000 # 7일
+
+# 운영 환경 CORS (실제 프론트엔드 도메인)
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+# 운영 환경 파일 업로드
+file:
+  upload:
+    path: ${FILE_UPLOAD_PATH:/app/uploads}
+
+# 운영 환경 로깅 (INFO 레벨 이상만)
+logging:
+  level:
+    com.moviebuddies: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.springframework.web: WARN
+    org.springframework.cache: WARN
+  file:
+    name: ${LOG_FILE_PATH:/app/logs/application.log}
+    max-size: 500MB
+    max-history: 60
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"
+
+# 운영 환경 액추에이터 (최소한의 엔드포인트만 노출)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  security:
+    enabled: true
+
+# 운영 환경 성능 최적화
+server:
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    connection-timeout: 20000
+    max-connections: 8192

@@ -1,15 +1,13 @@
-version: "3.8"
-
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: moviebuddies-postgres
+    container_name: moviebuddies-postgres-dev
     environment:
-      POSTGRES_DB: moviebuddies
-      POSTGRES_USER: moviebuddies
-      POSTGRES_PASSWORD: password
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+      POSTGRES_DB: moviebuddies_dev
+      POSTGRES_USER: moviebuddies_user
+      POSTGRES_PASSWORD: moviebuddies_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
     ports:
       - "5432:5432"
     volumes:
@@ -19,7 +17,7 @@ services:
       - moviebuddies-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U moviebuddies -d moviebuddies"]
+      test: ["CMD-SHELL", "pg_isready -U moviebuddies_user -d moviebuddies_dev"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,10 +30,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
       - moviebuddies-network
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server /usr/local/etc/redis/redis.conf
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -47,23 +46,23 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    container_name: moviebuddies-backend
+    container_name: moviebuddies-backend-dev
     ports:
       - "8080:8080"
+      - "35729:35729"
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=moviebuddies
-      - DB_USER=moviebuddies
-      - DB_PASSWORD=password
+      - DB_NAME=moviebuddies_dev
+      - DB_USER=moviebuddies_user
+      - DB_PASSWORD=moviebuddies_password
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - JWT_SECRET=mySecretKeyForJWTTokenGenerationThatShouldBeLongEnoughAndSecure
-      - TMDB_API_KEY=${TMDB_API_KEY:-your_tmdb_api_key_here}
-      - TZ=Asia/Seoul
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
     volumes:
-      - ./backend/src:/app/src:ro # 소스 코드 핫 리로드용
+      - ./backend/src:/app/src:cached
       - app_uploads:/app/uploads
       - app_logs:/var/log/moviebuddies
     depends_on:
@@ -74,12 +73,63 @@ services:
     networks:
       - moviebuddies-network
     restart: unless-stopped
+    stdin_open: true
+    tty: true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test:
+        ["CMD", "curl", "-f", "http://localhost:8080/api/v1/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 90s
+
+  # Redis Commander (Redis GUI)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: moviebuddies-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - moviebuddies-network
+    restart: unless-stopped
+
+  # pgAdmin (PostgreSQL GUI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: moviebuddies-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@moviebuddies.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "8082:80"
+    volumes:
+      - pgadmin_data_dev:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - moviebuddies-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data_dev:
+    driver: local
+  app_uploads:
+    driver: local
+  app_logs:
+    driver: local
+
+networks:
+  moviebuddies-network:
+    driver: bridge
 
   # 프론트엔드
   # frontend:

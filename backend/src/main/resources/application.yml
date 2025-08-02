@@ -9,46 +9,68 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/moviebuddies
-    username: ${DB_USER:moviebuddies}
-    password: ${DB_PASSWORD:password}
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      connection-timeout: 20000
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
-    show-sql: true
+      ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         use_sql_comments: true
+        jdbc:
+          batch_size: 20
+          order_inserts: true
+          order_updates: true
     open-in-view: false
 
-  redis:
-    host: localhost
-    port: 6379
-    timeout: 2000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
 
+  # 파일 업로드 설정
   servlet:
     multipart:
       max-file-size: 10MB
-      max-request-size: 50MB
+      max-request-size: 10MB
+      enabled: true
 
+  # WebSocket 설정
+  websocket:
+    message-size-limit: 64KB
+    send-buffer-size-limit: 512KB
+    send-time-limit: 20000
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    property-naming-strategy: SNAKE_CASE
+
+  # 캐시 설정
   cache:
     type: redis
     redis:
-      time-to-live: 600000 # 10분
+      time-to-live: 3600000 # 1시간
+      cache-null-values: false
 
 # 헬스체크 및 모니터링
 management:
@@ -83,121 +105,71 @@ management:
 server:
   port: 8080
   servlet:
-    context-path: /api/v1
+    context-path: /api
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+  error:
+    include-stacktrace: never
+    include-message: always
 
+# JWT 설정
 jwt:
-  secret: ${JWT_SECRET:mySecretKeyForJWTTokenGenerationThatShouldBeLongEnoughAndSecure}
-  expiration: 86400000 # 24시간 (밀리초)
-  refresh-expiration: 604800000 # 7일
+  secret: ${JWT_SECRET:mySecretKey1234567890123456789012345678901234567890}
+  access-token-expiration: 3600000 # 1시간 (밀리초)
+  refresh-token-expiration: 604800000 # 7일 (밀리초)
+  issuer: moviebuddies
 
+# 파일 업로드 경로
 file:
-  upload-dir: ${user.home}/moviebuddies/uploads
-  profile-dir: ${file.upload-dir}/profile-images
-  chat-dir: ${file.upload-dir}/chat-images
+  upload:
+    path: ${FILE_UPLOAD_PATH:./uploads}
+    profile-images: ${file.upload.path}/profile-images
+    chat-images: ${file.upload.path}/chat-images
+  max-size: 10MB
+  allowed-extensions: jpg,jpeg,png,gif,webp
+
+# CORS 설정
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+  allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+  max-age: 3600
+
+# API 문서화 설정
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
 
 tmdb:
   api-key: ${TMDB_API_KEY:your-tmdb-api-key}
   base-url: https://api.themoviedb.org/3
   image-url: https://image.tmdb.org/t/p/w500
 
-logging:
-  level:
-    com.moviebuddies: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/application.log
-
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
-  packages-to-scan: com.moviebuddies.controller
-
----
-spring:
-  config:
-    activate:
-      on-profile: prod
-
-  datasource:
-    url: jdbc:postgresql://postgres:5432/moviebuddies
-
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-
-  redis:
-    host: redis
-
-# 프로덕션용 헬스체크 설정 (보안 강화)
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info # 최소한의 엔드포인트만 노출
-      base-path: /actuator
-  endpoint:
-    health:
-      show-details: when-authorized # 인증된 사용자에게만 상세 정보 표시
-      show-components: when-authorized
-      probes:
-        enabled: true
-  security:
-    enabled: true # 보안 활성화
-
-server:
-  port: 8080
-
+# 로깅 설정
 logging:
   level:
     com.moviebuddies: INFO
-    org.springframework.security: WARN
-    org.hibernate.SQL: WARN
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   file:
-    name: /var/log/moviebuddies/application.log
-
----
-# 테스트 환경 설정
-spring:
-  config:
-    activate:
-      on-profile: test
-
-  datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    database-platform: org.hibernate.dialect.H2Dialect
-
-  redis:
-    host: localhost
-    port: 6370 # 다른 포트 사용
-
-# 테스트용 헬스체크 설정
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health, info, metrics
-  endpoint:
-    health:
-      show-details: always
-      show-components: always
-
-jwt:
-  secret: testSecretKeyForJWTTokenGeneration
-  expiration: 3600000 # 1시간
+    name: ./logs/application.log
+    max-size: 100MB
+    max-history: 30

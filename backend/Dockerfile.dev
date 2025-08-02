@@ -37,8 +37,11 @@ RUN mkdir -p /app/uploads/profile-images && \
 EXPOSE 8080
 
 # 헬스체크용 스크립트 추가
-RUN echo '#!/bin/bash\ncurl -f http://localhost:8080/actuator/health || exit 1' > /healthcheck.sh && \
+RUN echo '#!/bin/bash\ncurl -f http://localhost:8080/api/v1/actuator/health || exit 1' > /healthcheck.sh && \
     chmod +x /healthcheck.sh
 
-# 개발 모드로 실행 (핫 리로드 지원)
-CMD ["./gradlew", "bootRun", "--no-daemon", "--args='--spring.profiles.active=dev'"]
+# 개발 환경 JVM 옵션
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -Dspring.profiles.active=dev"
+
+# 개발 모드로 애플리케이션 실행 (Live Reload 지원)
+CMD ["./gradlew", "bootRun", "--no-daemon"]

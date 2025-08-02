@@ -48,17 +48,20 @@ RUN mkdir -p /app/uploads/profile-images && \
     chown -R moviebuddies:moviebuddies /app && \
     chown -R moviebuddies:moviebuddies /var/log/moviebuddies
 
+# 파일 권한 설정
+RUN chown moviebuddies:moviebuddies app.jar
+
 # 사용자 전환
 USER moviebuddies
 
-EXPOSE 8080
+EXPOSE 8080 35729
 
 # 헬스체크
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8080/actuator/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/api/v1/actuator/health || exit 1
 
-# JVM 옵션 최적화 (메모리 사용량 고려)
-ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxGCPauseMillis=200"
+# JVM 옵션 설정
+ENV JAVA_OPTS="-server -Xms512m -Xmx1024m -XX:+UseG1GC -XX:G1HeapRegionSize=16m -XX:+UseStringDeduplication -XX:+OptimizeStringConcat -Djava.security.egd=file:/dev/./urandom"
 
 # 애플리케이션 실행
-CMD java $JAVA_OPTS -jar app.jar
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
