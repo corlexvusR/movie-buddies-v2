@@ -45,9 +45,9 @@ services:
     container_name: moviebuddies-redis-prod
     volumes:
       - redis_prod_data:/data
+      - ./config/redis-prod.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
       - moviebuddies-prod-network
-      - ./config/redis-prod.conf:/usr/local/etc/redis/redis.conf:ro
     restart: always
     command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASSWORD}
     healthcheck:
@@ -69,7 +69,7 @@ services:
     image: grafana/grafana:latest
     container_name: moviebuddies-grafana
     ports:
-      - "3001:3000" # Next.js와 충돌 방지
+      - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
       - GF_USERS_ALLOW_SIGN_UP=false
@@ -122,6 +122,8 @@ services:
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
       - FILE_UPLOAD_PATH=/app/uploads
       - LOG_FILE_PATH=/app/logs/application.log
+    ports:
+      - "8081:8080" # 백엔드 API 포트
     volumes:
       - app_prod_uploads:/app/uploads
       - app_prod_logs:/var/log/moviebuddies
@@ -134,7 +136,8 @@ services:
       - moviebuddies-prod-network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/actuator/health"]
+      test:
+        ["CMD", "curl", "-f", "http://localhost:8080/api/v1/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -153,7 +156,24 @@ services:
         max-size: "200m"
         max-file: "5"
 
-    # Nginx 리버스 프록시
+  # 프론트엔드
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: moviebuddies-frontend-prod
+  #   environment:
+  #     - NODE_ENV=production
+  #     - NEXT_PUBLIC_API_URL=http://localhost:8081
+  #   ports:
+  #     - "3001:3000"  # Frontend 포트 3001
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - moviebuddies-prod-network
+  #   restart: always
+
+  # Nginx 리버스 프록시
   nginx:
     image: nginx:alpine
     container_name: moviebuddies-nginx
@@ -179,10 +199,10 @@ services:
       resources:
         limits:
           memory: 256M
-          cpus: '0.5'
+          cpus: "0.5"
         reservations:
           memory: 128M
-          cpus: '0.25'
+          cpus: "0.25"
     logging:
       driver: "json-file"
       options:
@@ -199,17 +219,25 @@ services:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=30d'
-      - '--web.enable-lifecycle'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
     networks:
       - moviebuddies-network
     restart: always
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9090/-/healthy",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -217,10 +245,10 @@ services:
       resources:
         limits:
           memory: 512M
-          cpus: '0.5'
+          cpus: "0.5"
         reservations:
           memory: 256M
-          cp
+          cpus: "0.25"
 
 volumes:
   postgres_prod_data:
@@ -230,6 +258,12 @@ volumes:
   app_prod_uploads:
     driver: local
   app_prod_logs:
+    driver: local
+  prometheus_data: # Prometheus 영구 저장소
+    driver: local
+  grafana_data: # Grafana 영구 저장소
+    driver: local
+  nginx_logs:
     driver: local
 
 networks:
