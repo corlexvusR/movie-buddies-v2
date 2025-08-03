@@ -37,7 +37,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
      * @param pageable 페이징 정보
      * @return 검색된 영화 목록 (페이징)
      */
-    @Query("SELETE m FROM Movie m WHERE LOWER(m.title) LIKE LOWER(CONCAT('%', :title, '%'))")
+    @Query("SELECT m FROM Movie m WHERE LOWER(m.title) LIKE LOWER(CONCAT('%', :title, '%'))")
     Page<Movie> findByTitleContainingIgnoreCase(@Param("title") String title, Pageable pageable);
 
     /**
