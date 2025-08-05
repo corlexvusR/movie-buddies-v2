@@ -26,8 +26,8 @@ public class MovieStatsResponse {
     private long nowPlayingMovies;
 
     /**
-     * 전체 영화으 평균 평점 (TMDB 기준)
+     * 전체 영화의 평균 평점 (TMDB 기준)
      */
-    private long averageRating;
+    private Double averageRating;
 
 }
