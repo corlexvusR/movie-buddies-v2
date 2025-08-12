@@ -111,6 +111,7 @@ public class SecurityConfig {
                         .requestMatchers("/reviews/**").authenticated() // 리뷰 관리
                         .requestMatchers("/chat/**").authenticated()    // 채팅
                         .requestMatchers("/bookmarks/**").authenticated()   // 북마크
+                        .requestMatchers("/admin/**").authenticated()   // 관리자
                         
                         // 나머지 모든 요청은 인증 필요
                         .anyRequest().authenticated()
