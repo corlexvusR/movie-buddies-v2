@@ -11,13 +11,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * Movie Buddies 백엔드 애플리케이션 메인 클래스
  *
  * Spring Boot 애플리케이션의 진입점이며, 필요한 기능들을 활성화
- * - JPA Auditing: 엔티티의 생성/수정 시간 자동 관리
  * - 캐싱: Redis 기반 캐시 시스템 활성화
  * - 비동기 처리: 파일 업로드, 이메일 발송 등 비동기 작업 지원
  * - 스케줄링: 정기적인 배치 작업 및 클린업 작업 지원
  */
 @SpringBootApplication	// Spring Boot 자동 설정 및 컴포넌트 스캔 활성화
-@EnableJpaAuditing	// JPA Auditing 기능 활성화 (createdAt, lastModifiedAt 자동 관리)
 @EnableCaching	// Spring Cache 추상화 활성화 (Redis 캐시 사용)
 @EnableAsync	// 비동기 메서드 실행 지원 (@Async 어노테이션 사용 가능)
 @EnableScheduling	// 스케줄링 기능 활성화 (@Scheduled 어노테이션 사용 가능)

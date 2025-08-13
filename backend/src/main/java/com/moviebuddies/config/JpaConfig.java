@@ -8,9 +8,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 /**
  * JPA 및 데이터베이스 관련 설정
  * 엔티티 자동 시간 추적 및 트랜잭션 관리 활성화
+ * - JPA Auditing: 엔티티의 생성/수정 시간 자동 관리
  */
 @Configuration
-@EnableJpaAuditing  // JPA Auditing 기능 활성화 
+@EnableJpaAuditing  // JPA Auditing 기능 활성화 (createdAt, lastModifiedAt 자동 관리)
 @EnableJpaRepositories(basePackages = "com.moviebuddies.repository")    // Repository 스캔 범위
 @EnableTransactionManagement    // 트랜잭션 관리 활성화
 public class JpaConfig {
