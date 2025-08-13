@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -40,14 +41,20 @@ public class MovieService {
      * @param sortBy 정렬 기준 (popularity, title, release_date, vote_average, vote_count, runtime)
      * @return 페이징된 영화 목록
      */
-    @Cacheable(value = "movieList", key = "#pageable.pageNumber + '_' + #pageable.pageSize + '_' + #sortBy")
+    @Cacheable(value = "movies", key = "#pageable.pageNumber + '_' + #pageable.pageSize + '_' + #sortBy")
+    public List<MovieListResponse> getMovieList(Pageable pageable, String sortBy) {
+        // Page를 List로 변환해서 캐시
+        Page<Movie> moviePage = movieRepository.findAllByOrderByPopularityDesc(pageable);
+        return moviePage.getContent().stream()
+                .map(MovieListResponse::from)
+                .collect(Collectors.toList());
+    }
+
     public Page<MovieListResponse> getMovies(Pageable pageable, String sortBy) {
-        log.info("영화 목록 조회 - 페이지: {}, 크기: {}, 정렬: {}", pageable.getPageNumber(), pageable.getPageSize(), sortBy);
-
-        Pageable sortedPageable = createSortedPageable(pageable, sortBy);
-        Page<Movie> movies = movieRepository.findAll(sortedPageable);
-
-        return movies.map(MovieListResponse::from);
+        // 캐시에서 List를 가져와서 Page로 감싸기
+        List<MovieListResponse> movies = getMovieList(pageable, sortBy);
+        long total = movieRepository.count(); // 전체 개수는 별도 조회
+        return new PageImpl<>(movies, pageable, total);
     }
 
     /**
@@ -58,7 +65,7 @@ public class MovieService {
      * @return 영화 상세 정보
      * @throws ResourceNotFoundException 영화를 찾을 수 없는 경우
      */
-    @Cacheable(value = "movieDetail", key = "#movieId")
+//    @Cacheable(value = "movieDetail", key = "#movieId")
     public MovieResponse getMovieDetail(Long movieId) {
         log.info("영화 상세 정보 조회 - ID: {}", movieId);
 
