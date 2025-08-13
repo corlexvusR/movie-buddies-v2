@@ -105,7 +105,7 @@ management:
 server:
   port: 8080
   servlet:
-    context-path: /api
+    context-path: /api/v1
     encoding:
       charset: UTF-8
       enabled: true
@@ -120,7 +120,7 @@ server:
 
 # JWT 설정
 jwt:
-  secret: ${JWT_SECRET:mySecretKey1234567890123456789012345678901234567890}
+  secret: ${JWT_SECRET}
   access-token-expiration: 3600000 # 1시간 (밀리초)
   refresh-token-expiration: 604800000 # 7일 (밀리초)
   issuer: moviebuddies
@@ -155,7 +155,7 @@ springdoc:
   default-produces-media-type: application/json
 
 tmdb:
-  api-key: ${TMDB_API_KEY:your-tmdb-api-key}
+  api-key: ${TMDB_API_KEY}
   base-url: https://api.themoviedb.org/3
   image-url: https://image.tmdb.org/t/p/w500
 

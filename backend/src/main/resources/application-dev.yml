@@ -57,7 +57,7 @@ cors:
 
 # 개발 환경 JWT
 jwt:
-  secret: ${JWT_SECRET:mySecretKeyForJWTTokenGenerationThatShouldBeLongEnoughAndSecure}
+  secret: ${JWT_SECRET}
   expiration: 86400000 # 24시간
   refresh-expiration: 604800000 # 7일
 
@@ -66,6 +66,11 @@ file:
   upload-dir: ${user.home}/moviebuddies/uploads/dev
   profile-dir: ${file.upload-dir}/profile-images
   chat-dir: ${file.upload-dir}/chat-images
+
+tmdb:
+  api-key: ${TMDB_API_KEY}
+  base-url: https://api.themoviedb.org/3
+  image-url: https://image.tmdb.org/t/p/w500
 
 # 개발 환경 액추에이터 (모든 엔드포인트 노출)
 management:

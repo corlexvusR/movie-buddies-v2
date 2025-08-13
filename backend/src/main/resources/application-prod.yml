@@ -40,14 +40,23 @@ spring:
 # 운영 환경 서버 설정
 server:
   port: ${SERVER_PORT:8080}
+  address: 0.0.0.0
   compression:
     enabled: true
   http2:
     enabled: true
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    connection-timeout: 20000
+    max-connections: 8192
 
 # 운영 환경 보안 강화
 jwt:
   secret: ${JWT_SECRET} # 환경변수에서 필수로 가져오기
+  expiration: 1800000
+  refresh-expiration: 604800000
   access-token-expiration: 1800000 # 30분 (보안 강화)
   refresh-token-expiration: 604800000 # 7일
 
@@ -59,6 +68,11 @@ cors:
 file:
   upload:
     path: ${FILE_UPLOAD_PATH:/app/uploads}
+
+tmdb:
+  api-key: ${TMDB_API_KEY}
+  base-url: https://api.themoviedb.org/3
+  image-url: https://image.tmdb.org/t/p/w500
 
 # 운영 환경 로깅 (INFO 레벨 이상만)
 logging:
@@ -90,12 +104,3 @@ management:
         enabled: true
   security:
     enabled: true
-
-# 운영 환경 성능 최적화
-server:
-  tomcat:
-    threads:
-      max: 200
-      min-spare: 10
-    connection-timeout: 20000
-    max-connections: 8192
