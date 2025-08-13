@@ -1,11 +1,9 @@
-FROM openjdk:17-jdk-slim as builder
+FROM eclipse-temurin:17-jdk as builder
 
 WORKDIR /app
 
 # 시스템 패키지 설치 (빌드용)
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Gradle Wrapper 및 설정 파일 복사
 COPY gradlew .
@@ -20,7 +18,7 @@ RUN chmod +x ./gradlew && \
     ./gradlew build -x test --no-daemon
 
 # 런타임 스테이지
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre
 
 # 시스템 패키지 설치 (런타임용)
 RUN apt-get update && apt-get install -y \
@@ -54,7 +52,7 @@ RUN chown moviebuddies:moviebuddies app.jar
 # 사용자 전환
 USER moviebuddies
 
-EXPOSE 8080 35729
+EXPOSE 8080
 
 # 헬스체크
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
