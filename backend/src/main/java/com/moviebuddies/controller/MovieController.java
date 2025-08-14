@@ -4,7 +4,6 @@ import com.moviebuddies.dto.request.MovieSearchRequest;
 import com.moviebuddies.dto.response.ApiResponse;
 import com.moviebuddies.dto.response.MovieListResponse;
 import com.moviebuddies.dto.response.MovieResponse;
-import com.moviebuddies.dto.response.MovieStatsResponse;
 import com.moviebuddies.service.MovieService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -263,41 +262,5 @@ public class MovieController {
         Page<MovieListResponse> movies = movieService.getMoviesByRuntime(minRuntime, maxRuntime, pageable);
 
         return ResponseEntity.ok(ApiResponse.success("런타임 범위 영화 목록을 조회했습니다.", movies));
-    }
-
-    /**
-     * 최근 데이터베이스에 추가된 영화 목록 조회
-     * 데이터 동기화 확인용으로 활용
-     *
-     * @param limit 조회할 영화 수 (기본값: 10)
-     * @return 최근 추가된 영화 목록과 성공 메시지
-     */
-    @Operation(summary = "최근 추가된 영화", description = "최근에 데이터베이스에 추가된 영화 목록을 조회합니다.")
-    @GetMapping("/recent")
-    public ResponseEntity<ApiResponse<List<MovieListResponse>>> getRecentlyAddedMovies(
-            @Parameter(description = "조회할 영화 수") @RequestParam(defaultValue = "10") int limit) {
-
-        log.info("최근 추가된 영화 조회 요청 - 개수: {}", limit);
-
-        List<MovieListResponse> movies = movieService.getRecentlyAddedMovies(limit);
-
-        return ResponseEntity.ok(ApiResponse.success("최근 추가된 영화 목록을 조회했습니다.", movies));
-    }
-
-    /**
-     * 영화 관련 통계 정보 조회
-     * 대시보드 등에서 활용
-     *
-     * @return 영화 통계 정보 (전체 수, 상영중 수, 평균 평점)와 성공 메시지
-     */
-    @Operation(summary = "영화 통계", description = "영화 관련 통계 정보를 조회합니다.")
-    @GetMapping("/stats")
-    public ResponseEntity<ApiResponse<MovieStatsResponse>> getMovieStats() {
-
-        log.info("영화 통계 정보 조회 요청");
-
-        MovieStatsResponse stats = movieService.getMovieStats();
-
-        return ResponseEntity.ok(ApiResponse.success("영화 통계 정보를 조회했습니다.", stats));
     }
 }

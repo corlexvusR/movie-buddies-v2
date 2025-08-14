@@ -3,7 +3,6 @@ package com.moviebuddies.service;
 import com.moviebuddies.dto.request.MovieSearchRequest;
 import com.moviebuddies.dto.response.MovieListResponse;
 import com.moviebuddies.dto.response.MovieResponse;
-import com.moviebuddies.dto.response.MovieStatsResponse;
 import com.moviebuddies.entity.Genre;
 import com.moviebuddies.entity.Movie;
 import com.moviebuddies.exception.ResourceNotFoundException;
@@ -261,46 +260,6 @@ public class MovieService {
 
         Page<Movie> movies = movieRepository.findByRuntimeBetween(minRuntime, maxRuntime, pageable);
         return movies.map(MovieListResponse::from);
-    }
-
-    /**
-     * 최근 추가된 영화 조회
-     * 데이터베이스 등록 시간 기준으로 정렬
-     *
-     * @param limit 조회할 영화 수
-     * @return 최근 추가된 영화 목록
-     */
-    @Cacheable(value = "recentlyAddedMovies")
-    public List<MovieListResponse> getRecentlyAddedMovies(int limit) {
-        log.info("최근 추가된 영화 조회 - 개수: {}", limit);
-
-        Pageable pageable = PageRequest.of(0, limit);
-        List<Movie> movies = movieRepository.findRecentlyAddedMovies(pageable);
-
-        return movies.stream()
-                .map(MovieListResponse::from)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 영화 통계 정보 조회
-     * 전체 영화 수, 현재 상영작 수, 평균 평점 등의 통계 데이터 제공
-     *
-     * @return 영화 통계 정보
-     */
-    @Cacheable(value = "movieStats")
-    public MovieStatsResponse getMovieStats() {
-        log.info("영화 통계 정보 조회");
-
-        long totalMovies = movieRepository.count();
-        long nowPlayingMovies = movieRepository.countNowPlayingMovies();
-        double averageRating = movieRepository.getAverageRating();
-
-        return MovieStatsResponse.builder()
-                .totalMovies(totalMovies)
-                .nowPlayingMovies(nowPlayingMovies)
-                .averageRating(averageRating)
-                .build();
     }
 
     /**

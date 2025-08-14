@@ -211,42 +211,4 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     List<Movie> findRecommendedMoviesByGenres(@Param("genreIds") List<Long> genreIds,
                                               @Param("excludeMovieId") Long excludeMovieId,
                                               Pageable pageable);
-
-    /**
-     * 현재 상영중인 영화 수 조회
-     * 대시보드나 통계 페이지에서 사용
-     *
-     * @return 현재 상영중인 영화 개수
-     */
-    @Query("SELECT COUNT(m) FROM Movie m WHERE m.isNowPlaying = true")
-    Long countNowPlayingMovies();
-
-    /**
-     * 특정 연도 개봉 영화 수 조회
-     * 연도별 통계나 연간 리포트에서 사용
-     *
-     * @param year 조회할 연도
-     * @return 해당 연도 개봉 영화 개수
-     */
-    @Query("SELECT COUNT(m) FROM Movie m WHERE YEAR(m.releaseDate) = :year")
-    Long countMoviesByYear(@Param("year") Integer year);
-
-    /**
-     * 전체 영화 평균 평점 조회
-     * 전체 데이터베이스 품질 지표나 통계에서 사용
-     *
-     * @return 모든 영화의 평균 평점
-     */
-    @Query("SELECT AVG(m.voteAverage) FROM Movie m")
-    Double getAverageRating();
-
-    /**
-     * 최근 추가된 영화 조회 (생성일 기준)
-     * 관리자 페이지나 "최근 추가된 영화" 섹션에서 사용
-     *
-     * @param pageable 조회할 개수 제한
-     * @return 최근 추가된 영화 목록 (추가 순서 역순)
-     */
-    @Query("SELECT m FROM Movie m ORDER BY m.createdAt DESC")
-    List<Movie> findRecentlyAddedMovies(Pageable pageable);
 }
