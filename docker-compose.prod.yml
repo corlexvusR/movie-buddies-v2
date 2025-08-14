@@ -160,21 +160,28 @@ services:
         max-file: "5"
 
   # 프론트엔드
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: moviebuddies-frontend-prod
-  #   environment:
-  #     - NODE_ENV=production
-  #     - NEXT_PUBLIC_API_URL=http://localhost:8081
-  #   ports:
-  #     - "3001:3000"  # Frontend 포트 3001
-  #   depends_on:
-  #     - backend
-  #   networks:
-  #     - moviebuddies-prod-network
-  #   restart: always
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: moviebuddies-frontend-prod
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8081/api/v1
+    ports:
+      - "3001:3000" # Frontend 포트 3001
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - moviebuddies-prod-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   # Nginx 리버스 프록시
   nginx:
