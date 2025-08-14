@@ -2,7 +2,6 @@ package com.moviebuddies.controller;
 
 import com.moviebuddies.dto.response.ApiResponse;
 import com.moviebuddies.dto.response.BookmarkResponse;
-import com.moviebuddies.dto.response.BookmarkStatsResponse;
 import com.moviebuddies.dto.response.MovieBookmarkStatsResponse;
 import com.moviebuddies.security.UserDetailsImpl;
 import com.moviebuddies.service.BookmarkService;
@@ -188,41 +187,5 @@ public class BookmarkController {
                 bookmarkService.getMostBookmarkedMovies(limit);
 
         return ResponseEntity.ok(ApiResponse.success("인기 북마크 영화 순위입니다.", stats));
-    }
-
-    /**
-     * 최근 북마크된 영화 목록 조회
-     * 실시간 사용자 활동 표시에 활용
-     *
-     * @param limit 조회할 북마크 수 (기본: 10개)
-     * @return 최근 생성된 북마크 목록
-     */
-    @Operation(summary = "최근 북마크", description = "최근에 북마크된 영화 목록을 조회합니다.")
-    @GetMapping("/recent")
-    public ResponseEntity<ApiResponse<List<BookmarkResponse>>> getRecentBookmarks(
-            @Parameter(description = "조회할 북마크 수") @RequestParam(defaultValue = "10") int limit) {
-
-        log.info("최근 북마크 조회 요청 - 개수: {}", limit);
-
-        List<BookmarkResponse> bookmarks = bookmarkService.getRecentBookmarks(limit);
-
-        return ResponseEntity.ok(ApiResponse.success("최근 북마크 목록입니다.", bookmarks));
-    }
-
-    /**
-     * 북마크 관련 전체 통계 조회
-     * 서비스 현황 파악에 활용
-     *
-     * @return 북마크 통계 정보 (전체 북마크 수 등)
-     */
-    @Operation(summary = "북마크 통계", description = "북마크 관련 통계를 조회합니다.")
-    @GetMapping("/stats")
-    public ResponseEntity<ApiResponse<BookmarkStatsResponse>> getBookmarkStats() {
-
-        log.info("북마크 통계 조회 요청");
-
-        BookmarkStatsResponse stats = bookmarkService.getBookmarkStats();
-
-        return ResponseEntity.ok(ApiResponse.success("북마크 통계 정보입니다.", stats));
     }
 }

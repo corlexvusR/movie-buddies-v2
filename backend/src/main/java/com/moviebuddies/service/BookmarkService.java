@@ -1,7 +1,6 @@
 package com.moviebuddies.service;
 
 import com.moviebuddies.dto.response.BookmarkResponse;
-import com.moviebuddies.dto.response.BookmarkStatsResponse;
 import com.moviebuddies.dto.response.MovieBookmarkStatsResponse;
 import com.moviebuddies.entity.Bookmark;
 import com.moviebuddies.entity.Movie;
@@ -194,41 +193,5 @@ public class BookmarkService {
                         .bookmarkCount((Long) result[2])
                         .build())
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * 최근 북마크된 영화 목록 조회
-     * 전체 사용자의 최신 북마크 동향 파악이나 실시간 활동 표시에 활용
-     *
-     * @param limit 조회할 북마크 수
-     * @return 최근 생성된 북마크 목록
-     */
-    @Cacheable(value = "recentBookmarks", key = "#limit")
-    public List<BookmarkResponse> getRecentBookmarks(int limit) {
-        log.info("최근 북마크 조회 - 개수: {}", limit);
-
-        Pageable pageable = PageRequest.of(0, limit);
-        List<Bookmark> bookmarks = bookmarkRepository.findRecentBookmarks(pageable);
-
-        return bookmarks.stream()
-                .map(BookmarkResponse::from)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 북마크 관련 전체 통계 정보 조회
-     * 서비스 현황 파악에 활용
-     * 
-     * @return 북마크 통계 정보 (전체 북마크 수 등)
-     */
-    @Cacheable(value = "bookmarkStats")
-    public BookmarkStatsResponse getBookmarkStats() {
-        log.info("북마크 통계 조회");
-
-        long totalBookmarks = bookmarkRepository.count();
-
-        return BookmarkStatsResponse.builder()
-                .totalBookmarks(totalBookmarks)
-                .build();
     }
 }

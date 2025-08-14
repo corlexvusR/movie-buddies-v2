@@ -98,14 +98,4 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
      */
     @Query("SELECT b.movie.id, b.movie.title, COUNT(b) as bookmarkCount FROM Bookmark b " + "GROUP BY b.movie.id, b.movie.title ORDER BY COUNT(b) DESC")
     List<Object[]> findMostBookmarkedMovies(Pageable pageable);
-
-    /**
-     * 최근 북마크된 영화들 조회
-     * 전체 사용자의 최신 북마크 현황
-     * 
-     * @param pageable 페이징 정보
-     * @return 최신 북마크 목록
-     */
-    @Query("SELECT b FROM Bookmark b ORDER BY b.createdAt DESC")
-    List<Bookmark> findRecentBookmarks(Pageable pageable);
 }
