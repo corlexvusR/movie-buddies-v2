@@ -70,7 +70,7 @@ public class TmdbService {
         try {
             // TMDB 장르 목록 API URL 구성
             String url = UriComponentsBuilder.fromUriString(baseUrl + "/genre/movie/list")
-                    .queryParam("api-key", apiKey)
+                    .queryParam("api_key", apiKey)
                     .queryParam("language", "ko-KR")    // 한국어 장르명
                     .toUriString();
 
