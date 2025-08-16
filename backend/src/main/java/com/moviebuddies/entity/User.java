@@ -134,9 +134,9 @@ public class User {
      * 참여한 채팅방들
      * 다대다 관계로 여러 채팅방에 참여 가능
      */
-//    @ManyToMany(mappedBy = "participants", fetch = FetchType.LAZY)
-//    @Builder.Default
-//    private List<ChatRoom> chatRooms = new ArrayList<>();
+    @ManyToMany(mappedBy = "participants", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ChatRoom> chatRooms = new ArrayList<>();
 
     /**
      * 프로필 이미지 URL 생성
