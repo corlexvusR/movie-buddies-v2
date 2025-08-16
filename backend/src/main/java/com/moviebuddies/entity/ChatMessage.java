@@ -69,4 +69,15 @@ public class ChatMessage {
     public boolean isFromUser(User user) {
         return sender.equals(user);
     }
+
+    /**
+     * 익명 메시지 표시용 정보 생성
+     * 메시지 발송자의 익명 식별자를 해당 채팅방 기준으로 생성
+     * 채팅방의 익명성 정책에 따라 실제 사용자명 대신 사용
+     *
+     * @return 발송자의 익명 표시명 (예: "익명001", "익명042")
+     */
+    public String getAnonymousDisplayName() {
+        return chatRoom.getAnonymousDisplayName(sender);
+    }
 }

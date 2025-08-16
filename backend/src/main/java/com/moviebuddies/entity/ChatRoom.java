@@ -81,7 +81,6 @@ public class ChatRoom {
      * 채팅방 참가자 목록
      * 다대다 관계로 여러 사용자가 여러 채팅방에 참여 가능
      */
-
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "chat_room_participants",
@@ -92,33 +91,63 @@ public class ChatRoom {
     private List<User> participants = new ArrayList<>();
 
     /**
+     * 채팅방 참가
+     * 채팅방 참가 조건을 만족하는 경우 참가자 목록에 추가
+     *
+     * @param user 참가를 원하는 사용자
+     * @return 참가가 성공한 경우 true, 실패한 경우 false
+     */
+    public boolean joinRoom(User user) {
+        if (canJoin(user)) {
+            participants.add(user);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 채팅방 나가기
+     * 현재 참가자인 경우에만 참가자 목록에서 제거
+     *
+     * @param user 퇴장을 원하는 사용자
+     * @return 퇴장이 성공한 경우 true, 실패한 경우 false
+     */
+    public boolean leaveRoom(User user) {
+        if (isParticipant(user)) {
+            participants.remove(user);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 익명 표시용 사용자 식별자 생성
+     * 채팅방 내에서만 유효한 임시 식별자로 사용자의 실제 정보를 숨김
+     * 사용자 ID와 채팅방 ID를 조합한 해시값을 기반으로 일관된 익명 이름 생성
+     *
+     * @param user 익명 식별자를 생성할 사용자
+     * @return 채팅방 참가자인 경우 "익명XXX" 형태의 문자열, 비참가자인 경우 "Unknown"
+     */
+    public String getAnonymousDisplayName(User user) {
+        if (!isParticipant(user)) {
+            return "Unknown";
+        }
+
+        // 사용자 ID와 채팅방 ID를 조합한 해시 기반 익명 이름
+        int hash = Math.abs((user.getId().toString() + this.id.toString()).hashCode());
+        // 1-999 범위
+        int displayNumber = (hash % 999) + 1;
+
+        return "익명" + String.format("%03d", displayNumber);
+    }
+
+    /**
      * 채팅방 메시지 목록
      * 채팅방에 속한 모든 메시지들
      */
     @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ChatMessage> messages = new ArrayList<>();
-
-    /**
-     * 채팅방에 새로운 참가자 추가
-     * 최대 참가자 수를 초과하지 않고 이미 참가하지 않은 경우에만 추가
-     *
-     * @param user 추가할 사용자
-     */
-    public void addParticipant(User user) {
-        if (!participants.contains(user) && participants.size() < maxParticipants) {
-            participants.add(user);
-        }
-    }
-
-    /**
-     * 채팅방에서 참가자 제거
-     *
-     * @param user 제거할 사용자
-     */
-    public void removeParticipant(User user) {
-        participants.remove(user);
-    }
 
     /**
      * 특정 사용자가 채팅방에 참가하고 있는지 확인
@@ -157,5 +186,16 @@ public class ChatRoom {
      */
     public boolean canJoin(User user) {
         return isActive && !isFull() && !isParticipant(user);
+    }
+
+    /**
+     * 채팅방 생성자인지 확인
+     * 정보 제공 목적으로만 사용되며, 실제 권한 부여와는 무관
+     *
+     * @param user 확인할 사용자
+     * @return 해당 사용자가 채팅방 생성자인 경우 true
+     */
+    public boolean isCreatedBy(User user) {
+        return createdBy != null && createdBy.equals(user);
     }
 }
