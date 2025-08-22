@@ -37,7 +37,7 @@ public class Movie {
      * 영화 제목
      * 최대 200자까지 저장 가능
      */
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false, length = 200, columnDefinition = "TEXT")
     private String title;
 
     /**

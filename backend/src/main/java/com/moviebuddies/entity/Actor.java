@@ -36,7 +36,7 @@ public class Actor {
      * 배우 이름
      * 최대 100자까지 저장 가능
      */
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 100, columnDefinition = "TEXT")
     private String name;
 
     /**

@@ -12,7 +12,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d:ro
+      # - ./backend/src/main/resources/db/migration:/docker-entrypoint-initdb.d:ro
     networks:
       - moviebuddies-network
     restart: unless-stopped

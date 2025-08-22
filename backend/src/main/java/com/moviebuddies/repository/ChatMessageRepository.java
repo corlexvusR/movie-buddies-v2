@@ -37,8 +37,8 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
      * @param roomId 조회할 채팅방 ID
      * @return 해당 채팅방의 가장 최근 메시지 (없으면 Optional.empty())
      */
-    @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRoom.id = :roomId ORDER BY cm.createdAt DESC LIMIT 1")
-    Page<ChatMessage> findLatestMessageByRoomId(@Param("roomId") Long roomId);
+    @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRoom.id = :roomId ORDER BY cm.createdAt DESC")
+    Page<ChatMessage> findLatestMessageByRoomId(@Param("roomId") Long roomId, Pageable pageable);
 
     /**
      * 특정 기간보다 오래된 메시지 조회
