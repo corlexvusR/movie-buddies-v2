@@ -115,7 +115,7 @@ public class MovieService {
 
     /**
      * 다양한 조건으로 영화 검색
-     * 제목, 장르, 배우명을 조합하여 복합 검색 지원
+     * 제목, 장르, 배우명, 개봉연도, 평점, 런타임, 현재상영을 조합하여 복합 검색 지원
      *
      * @param searchRequest 검색  조건
      * @param pageable 페이징 정보
@@ -124,24 +124,19 @@ public class MovieService {
     public Page<MovieListResponse> searchMovies(MovieSearchRequest searchRequest, Pageable pageable) {
         log.info("영화 검색 - 조건: {}", searchRequest);
 
-        Page<Movie> movies;
-
-        if (searchRequest.hasComplexSearch()) {
-            // 복합 검색 (제목 + 장르 + 영화)
-            movies = movieRepository.searchMovies(
-                    searchRequest.getTitle(),
-                    searchRequest.getGenreId(),
-                    searchRequest.getActorName(),
-                    pageable
-            );
-        } else if (searchRequest.getTitle() != null) {
-            // 제목으로만 검색
-            movies = movieRepository.findByTitleContainingIgnoreCase(
-                    searchRequest.getTitle(), pageable);
-        } else {
-            // 검색 조건 없음 - 전체 목록 반환
-            movies = movieRepository.findAll(pageable);
-        }
+        // 검색 조건 처리
+        Page<Movie> movies = movieRepository.searchMovies(
+                searchRequest.getTitle(),
+                searchRequest.getGenreId(),
+                searchRequest.getActorName(),
+                searchRequest.getReleaseYear(),
+                searchRequest.getMinRating(),
+                searchRequest.getMaxRating(),
+                searchRequest.getMinRuntime(),
+                searchRequest.getMaxRuntime(),
+                searchRequest.getNowPlaying(),
+                pageable
+        );
 
         return movies.map(MovieListResponse::from);
     }

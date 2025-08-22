@@ -171,13 +171,19 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
                                          Pageable pageable);
 
     /**
-     * 복합 검색 (제목, 장르, 배우명으로 통합 검색)
+     * 복합 검색 (제목, 장르, 배우명, 개봉연도, 평점, 런타임, 현재상영으로 통합 검색)
      * 고급 검색 기능에서 여러 조건을 조합하여 검색할 때 사용
      * 각 파라미터는 null일 수 있으며, null인 경우 해당 조건 무시
      *
      * @param title 영화 제목 (부분 일치, null 가능)
      * @param genreId 장르 ID (null 가능)
      * @param actorName 배우 이름 (부분 일치, null 가능)
+     * @param releaseYear 개봉 연도 (null 가능)
+     * @param minRating 최소 평점 (null 가능)
+     * @param maxRating 최대 평점 (null 가능)
+     * @param minRuntime 최소 런타임 (null 가능)
+     * @param maxRuntime 최대 런타임 (null 가능)
+     * @param nowPlaying 현재 상영중 여부 (null 가능)
      * @param pageable 페이징 정보
      * @return 조건에 맞는 영화 목록 (인기순)
      */
@@ -187,10 +193,22 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
             "WHERE (:title IS NULL OR LOWER(m.title) LIKE LOWER(CONCAT('%', :title, '%'))) " +
             "AND (:genreId IS NULL OR g.id = :genreId) " +
             "AND (:actorName IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', :actorName, '%'))) " +
+            "AND (:releaseYear IS NULL OR YEAR(m.releaseDate) = :releaseYear) " +
+            "AND (:minRating IS NULL OR m.voteAverage >= :minRating) " +
+            "AND (:maxRating IS NULL OR m.voteAverage <= :maxRating) " +
+            "AND (:minRuntime IS NULL OR m.runtime >= :minRuntime) " +
+            "AND (:maxRuntime IS NULL OR m.runtime <= :maxRuntime) " +
+            "AND (:nowPlaying IS NULL OR m.isNowPlaying = :nowPlaying) " +
             "ORDER BY m.popularity DESC")
     Page<Movie> searchMovies(@Param("title") String title,
                              @Param("genreId") Long genreId,
                              @Param("actorName") String actorName,
+                             @Param("releaseYear") Integer releaseYear,
+                             @Param("minRating") Double minRating,
+                             @Param("maxRating") Double maxRating,
+                             @Param("minRuntime") Integer minRuntime,
+                             @Param("maxRuntime") Integer maxRuntime,
+                             @Param("nowPlaying") Boolean nowPlaying,
                              Pageable pageable);
 
     /**

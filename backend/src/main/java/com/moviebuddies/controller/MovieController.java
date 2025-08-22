@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -129,13 +130,30 @@ public class MovieController {
     @Operation(summary = "영화 검색", description = "다양한 조건으로 영화를 검색합니다.")
     @PostMapping("/search")
     public ResponseEntity<ApiResponse<Page<MovieListResponse>>> searchMovies(
-            @RequestBody MovieSearchRequest searchRequest,
-            @PageableDefault(size = 20) Pageable pageable) {
+            @RequestBody @Valid MovieSearchRequest searchRequest,
+            @PageableDefault(size = 20, sort = "popularity", direction = Sort.Direction.DESC) Pageable pageable) {
 
         log.info("영화 검색 요청 - 조건: {}", searchRequest);
 
-        Page<MovieListResponse> movies = movieService.searchMovies(searchRequest, pageable);
+        // 검색 조건 검증
+        if (!searchRequest.hasAnySearchCriteria()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("최소 하나의 검색 조건을 입력해주세요."));
+        }
 
+        // 평점 범위 검증
+        if (!searchRequest.isValidRatingRange()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("최소 평점은 최대 평점보다 작거나 같아야 합니다."));
+        }
+
+        // 런타임 범위 검증
+        if (!searchRequest.isValidRuntimeRange()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("최소 런타임은 최대 런타임보다 작거나 같아야 합니다."));
+        }
+
+        Page<MovieListResponse> movies = movieService.searchMovies(searchRequest, pageable);
         return ResponseEntity.ok(ApiResponse.success("영화 검색을 완료했습니다.", movies));
     }
 

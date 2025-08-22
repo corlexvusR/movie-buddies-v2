@@ -1,5 +1,7 @@
 package com.moviebuddies.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,58 +15,78 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "영화 검색 요청")
 public class MovieSearchRequest {
 
     /**
      * 검색할 영화 제목
      * 부분 일치 검색 지원 (LIKE 쿼리 사용)
      */
+    @Schema(description = "영화 제목 (부분 검색)", example = "슈퍼맨")
+    @Size(max = 200, message = "제목은 200자 이하여야 합니다.")
     private String title;
 
     /**
      * 필터링할 장르 ID
      * Genre 테이블의 PK 값
      */
+    @Schema(description = "장르 ID", example = "28")
     private Long genreId;
 
     /**
      * 검색할 배우 이름
      * 부분 일치 검색 지원 (LIKE 쿼리 사용)
      */
+    @Schema(description = "배우 이름 (부분 검색)", example = "데이비드 코렌스웻")
+    @Size(max = 100, message = "배우명은 100자 이하여야 합니다.")
     private String actorName;
 
     /**
      * 필터링할 개봉 연도
      * 해당 연도에 개봉한 영화만 조회
      */
+    @Schema(description = "개봉 연도", example = "2025")
+    @Min(value = 1900, message = "개봉 연도는 1900년 이후여야 합니다.")
+    @Max(value = 2026, message = "개봉 연도는 2026년 이전이어야 합니다.")
     private Integer releaseYear;
 
     /**
      * 최소 평점
      * 0.0 ~ 10.0 범위의 TMDB 평점
      */
+    @Schema(description = "최소 평점", example = "7.0")
+    @DecimalMin(value = "0.0", message = "최소 평점은 0.0 이상이어야 합니다.")
+    @DecimalMax(value = "10.0", message = "최소 평점은 10.0 이하여야 합니다.")
     private Double minRating;
 
     /**
      * 최대 평점
      * 0.0 ~ 10.0 범위의 TMDB 평점
      */
+    @Schema(description = "최대 평점", example = "10.0")
+    @DecimalMin(value = "0.0", message = "최대 평점은 0.0 이상이어야 합니다.")
+    @DecimalMax(value = "10.0", message = "최대 평점은 10.0 이하여야 합니다.")
     private Double maxRating;
 
     /**
      * 최소 런타임 (해당 값 포함하여 조회)
      */
+    @Schema(description = "최소 런타임(분)", example = "90")
+    @Min(value = 0, message = "최소 런타임은 0분 이상이어야 합니다.")
     private Integer minRuntime;
 
     /**
      * 최대 런타임 (해당 값 포함하여 조회)
      */
+    @Schema(description = "최대 런타임(분)", example = "180")
+    @Min(value = 0, message = "최대 런타임은 0분 이상이어야 합니다.")
     private Integer maxRuntime;
 
     /**
      * 현재 상영중 여부
      * true: 현재 상영중인 영화만, false: 상영 종료된 영화만, null: 전체
      */
+    @Schema(description = "현재 상영중 여부", example = "true")
     private Boolean nowPlaying;
 
     /**
@@ -96,5 +118,38 @@ public class MovieSearchRequest {
                 minRuntime != null ||
                 maxRuntime != null ||
                 nowPlaying != null;
+    }
+
+    /**
+     * 검색 조건이 하나라도 있는지 확인
+     *
+     * @return 검색 조건이 있으면 true, 없으면 false
+     */
+    public boolean hasAnySearchCriteria() {
+        return hasComplexSearch() || hasFilters();
+    }
+
+    /**
+     * 평점 범위가 유효한지 검증
+     *
+     * @return 평점 범위가 유효하면 true, 유효하지 않으면 false
+     */
+    public boolean isValidRatingRange() {
+        if (minRating != null && maxRating != null) {
+            return minRating <= maxRating;
+        }
+        return true;
+    }
+
+    /**
+     * 런타임 범위가 유효한지 검증
+     *
+     * @return 런타임 범위가 유효하면 true, 유효하지 않으면 false
+     */
+    public boolean isValidRuntimeRange() {
+        if (minRuntime != null && maxRuntime != null) {
+            return minRuntime <= maxRuntime;
+        }
+        return true;
     }
 }
