@@ -1,5 +1,6 @@
 package com.moviebuddies.controller;
 
+import com.moviebuddies.dto.request.PasswordChangeRequest;
 import com.moviebuddies.dto.request.UserUpdateRequest;
 import com.moviebuddies.dto.response.ApiResponse;
 import com.moviebuddies.dto.response.UserResponse;
@@ -26,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
  * - 사용자 검색 및 프로필 조회
  * - 프로필 정보 수정
  * - 프로필 이미지 업로드
+ * - 비밀번호 변경
  * - 계정 삭제
  */
 @Slf4j
@@ -55,7 +57,10 @@ public class UserController {
     @Operation(summary = "사용자 검색", description = "닉네임, 사용자명, 이메일로 사용자를 검색합니다.")
     @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<Page<UserResponse>>> searchUsers(@RequestParam String query, @PageableDefault(size = 10) Pageable pageable, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+    public ResponseEntity<ApiResponse<Page<UserResponse>>> searchUsers(
+            @RequestParam String query,
+            @PageableDefault(size = 10) Pageable pageable,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
         log.info("사용자 검색 요청: query={}, userId={}", query, userDetails.getId());
 
@@ -75,7 +80,8 @@ public class UserController {
     @Operation(summary = "내 프로필 조회", description = "로그인한 사용자의 프로필 정보를 조회합니다.")
     @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserResponse>> getMyProfile(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+    public ResponseEntity<ApiResponse<UserResponse>> getMyProfile(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
         log.info("내 프로필 요청: userId={}", userDetails.getId());
 
@@ -95,7 +101,8 @@ public class UserController {
      */
     @Operation(summary = "사용자 프로필 조회", description = "특정 사용자의 프로필 정보를 조회합니다.")
     @GetMapping("/{username}")
-    public ResponseEntity<ApiResponse<UserResponse>> getUserProfile(@PathVariable String username) {
+    public ResponseEntity<ApiResponse<UserResponse>> getUserProfile(
+            @PathVariable String username) {
 
         log.info("사용자 프로필 조회 요청: userName={}", username);
 
@@ -117,12 +124,38 @@ public class UserController {
     @Operation(summary = "프로필 수정", description = "사용자 프로필 정보를 수정합니다.")
     @SecurityRequirement(name = "Bearer Authentication")
     @PutMapping("/me")
-    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(@Valid @RequestBody UserUpdateRequest request, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
+            @Valid @RequestBody UserUpdateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
         log.info("프로필 수정 요청: userId={}", userDetails.getId());
 
         UserResponse user = userService.updateUser(userDetails.getId(), request);
         return ResponseEntity.ok(ApiResponse.success("프로필이 수정되었습니다.", user));
+    }
+
+    /**
+     * 비밀번호 변경 API
+     * 
+     * 사용자의 비밀번호를 변경
+     * 보안을 위해 현재 비밀번호를 먼저 확인한 후 새 비밀번호로 변경
+     * 새 비밀번호와 확인 비밀번호가 일치하는지도 검증
+     *
+     * @param request 비밀번호 변경 요청 정보 (현재 비밀번호, 새 비밀번호, 확인 비밀번호)
+     * @param userDetails 현재 로그인한 사용자 정보
+     * @return 비밀번호 변경 완료 메시지
+     */
+    @Operation(summary = "비밀번호 변경", description = "현재 비밀번호를 확인한 후 새로운 비밀번호로 변경합니다.")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PutMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @Valid @RequestBody PasswordChangeRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        log.info("비밀번호 변경 요청: userId={}", userDetails.getId());
+
+        userService.changePassword(userDetails.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("비밀번호가 성공적으로 변경되었습니다."));
     }
 
     /**
@@ -139,7 +172,9 @@ public class UserController {
     @Operation(summary = "프로필 이미지 업로드", description = "프로필 이미지를 업로드합니다.")
     @SecurityRequirement(name = "Bearer Authentication")
     @PostMapping("/me/profile-image")
-    public ResponseEntity<ApiResponse<String>> uploadProfileImage(@RequestParam("file")MultipartFile file, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+    public ResponseEntity<ApiResponse<String>> uploadProfileImage(
+            @RequestParam("file")MultipartFile file,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
         log.info("프로필 이미지 업로드 요청: userId={}, fileName={}", userDetails.getId(), file.getOriginalFilename());
 
@@ -161,7 +196,8 @@ public class UserController {
     @Operation(summary = "계정 삭제", description = "사용자 계정을 삭제합니다.")
     @SecurityRequirement(name = "Bearer Authentication")
     @DeleteMapping("/me")
-    public ResponseEntity<ApiResponse<Void>> deleteAccount(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
 
         log.warn("계정 삭제(비활성화) 요청: userId={}", userDetails.getId());
 
