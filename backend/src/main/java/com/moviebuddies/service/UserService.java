@@ -1,5 +1,6 @@
 package com.moviebuddies.service;
 
+import com.moviebuddies.dto.request.PasswordChangeRequest;
 import com.moviebuddies.dto.request.UserUpdateRequest; // 존재하지 않음
 import com.moviebuddies.dto.response.UserResponse;
 import com.moviebuddies.entity.User;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
  * - 사용자 정보 조회 (ID, 사용자명)
  * - 사용자 검색 및 페이징
  * - 프로필 정보 수정
+ * - 비밀번호 변경
  * - 프로필 이미지 업로드/삭제
  * - 계정 비활성화 (소프트 삭제)
  */
@@ -35,6 +38,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final FileService fileService;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * 사용자 ID로 사용자 정보 조회
@@ -129,6 +133,49 @@ public class UserService {
         log.info("사용자 프로필 수정 완료 - 사용자 ID: {}", userId);
         return UserResponse.from(updatedUser);
     }
+
+    /**
+     * 사용자 비밀번호 변경
+     *
+     * 보안을 위해 현재 비밀번호를 먼저 확인 후 새 비밀번호로 변경
+     * 새 비밀번호와 확인 비밀번호의 일치 여부도 검증
+     *
+     * @param userId 비밀번호를 변경할 사용자 ID
+     * @param request 비밀번호 변경 요청 정보
+     * @throws ResourceNotFoundException 사용자를 찾을 수 없는 경우
+     * @throws BusinessException 현재 비밀번호가 틀렸거나 새 비밀번호가 일치하는 경우
+     */
+    @Transactional  // 쓰기 작업이므로 트랜잭션 적용
+    public void changePassword(Long userId, PasswordChangeRequest request) {
+
+        log.info("비밀번호 변경 요청 - 사용자 ID: {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자", userId));
+
+        // 1. 현재 비밀번호 확인
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw BusinessException.badRequest("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 2. 새 비밀번호와 확인 비밀번호 일치 여부 확인
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw BusinessException.badRequest("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
+        }
+
+        // 3. 새 비밀번호와 현재 비밀번호 동일한지 확인
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw BusinessException.badRequest("새 비밀번호는 현재 비밀번호와 달라야 합니다.");
+        }
+        
+        // 4. 비밀번호 암호화 후 저장
+        String encodedNewPassword = passwordEncoder.encode(request.getNewPassword());
+        user.changePassword(encodedNewPassword);
+        userRepository.save(user);
+
+        log.info("비밀번호 변경 완료 - 사용자 ID: {}", userId);
+    }
+
 
     /**
      * 프로필 이미지 업데이트
