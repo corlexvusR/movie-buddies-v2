@@ -199,3 +199,42 @@ export function objectToQueryString(obj: Record<string, unknown>): string {
 
   return params.toString();
 }
+
+export const storage = {
+  get<T>(key: string): T | null {
+    try {
+      if (typeof window === "undefined") return null;
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  set<T>(key: string, value: T): void {
+    try {
+      if (typeof window === "undefined") return;
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // 무시
+    }
+  },
+
+  remove(key: string): void {
+    try {
+      if (typeof window === "undefined") return;
+      window.localStorage.removeItem(key);
+    } catch {
+      // 무시
+    }
+  },
+
+  clear(): void {
+    try {
+      if (typeof window === "undefined") return;
+      window.localStorage.clear();
+    } catch {
+      // 무시
+    }
+  },
+};
