@@ -52,6 +52,7 @@ export interface AuthState {
   refreshToken: string | null;
   loading: boolean;
   error: string | null;
+  isInitialized: boolean;
 }
 
 /**

@@ -13,6 +13,7 @@ export const useAuth = () => {
     user,
     loading,
     error,
+    isInitialized,
     login,
     signup,
     logout,
@@ -29,6 +30,7 @@ export const useAuth = () => {
     user,
     isLoading: loading,
     error,
+    isInitialized,
 
     // 액션
     login,

@@ -18,6 +18,7 @@ interface AuthActions {
   updateUser: (user: UserResponse) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
+  setInitialized: (initialized: boolean) => void;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -32,6 +33,7 @@ export const useAuthStore = create<AuthStore>()(
       refreshToken: null,
       loading: false,
       error: null,
+      isInitialized: false,
 
       // 로그인
       login: async (credentials: LoginRequest) => {
@@ -55,6 +57,7 @@ export const useAuthStore = create<AuthStore>()(
             token: response.accessToken,
             refreshToken: response.refreshToken,
             loading: false,
+            isInitialized: true,
           });
         } catch (error: unknown) {
           const errorMessage =
@@ -105,6 +108,7 @@ export const useAuthStore = create<AuthStore>()(
           token: null,
           refreshToken: null,
           error: null,
+          isInitialized: true, // 로그아웃 후에도 초기화 상태 유지
         });
       },
 
@@ -135,6 +139,7 @@ export const useAuthStore = create<AuthStore>()(
             token: response.accessToken,
             refreshToken: response.refreshToken,
             user: response.user,
+            isAuthenticated: true,
           });
         } catch (error) {
           get().logout();
@@ -170,6 +175,11 @@ export const useAuthStore = create<AuthStore>()(
       setLoading: (loading: boolean) => {
         set({ loading });
       },
+
+      // 초기화 상태 설정
+      setInitialized: (initialized: boolean) => {
+        set({ isInitialized: initialized });
+      },
     }),
     {
       name: "auth-storage",
@@ -179,17 +189,48 @@ export const useAuthStore = create<AuthStore>()(
         token: state.token,
         refreshToken: state.refreshToken,
       }),
+      // rehydration 완료 시 즉시 초기화 상태 설정
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // 토큰이 있으면 인증 상태 유지
+          if (state.token && state.refreshToken) {
+            state.isAuthenticated = true;
+          } else {
+            // 토큰이 없으면 비인증 상태
+            state.isAuthenticated = false;
+          }
+          // rehydration 완료와 동시에 초기화 완료 마킹
+          state.isInitialized = true;
+        }
+        return state;
+      },
     }
   )
 );
 
 // 초기화 함수 (앱 시작 시 호출)
 export const initializeAuth = () => {
+  if (typeof window === "undefined") return;
+
   const state = useAuthStore.getState();
 
-  if (state.token) {
-    state.fetchUser().catch(() => {
-      state.logout();
-    });
+  // 이미 초기화되었거나 rehydration이 진행 중이면 스킵
+  if (state.isInitialized) {
+    // 토큰은 있지만 사용자 정보가 없는 경우 백그라운드에서 로드
+    if (state.token && state.isAuthenticated && !state.user) {
+      state.fetchUser().catch(() => {
+        state.logout();
+      });
+    }
+    return;
   }
+
+  // rehydration이 아직 완료되지 않은 경우를 위한 fallback
+  setTimeout(() => {
+    const currentState = useAuthStore.getState();
+    if (!currentState.isInitialized) {
+      // rehydration이 실패한 경우 수동으로 초기화
+      useAuthStore.setState({ isInitialized: true });
+    }
+  }, 100);
 };
