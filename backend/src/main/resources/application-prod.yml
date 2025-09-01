@@ -12,16 +12,24 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000 # 10분
+      cache-null-values: false
+
   # 운영 환경 JPA 설정
   jpa:
     hibernate:
-      ddl-auto: create # 운영 환경에서는 검증만
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         generate_statistics: false
         jdbc:
           batch_size: 50
+          order_inserts: true
+          order_updates: true
 
   # 운영 환경 Redis
   data:

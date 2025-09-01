@@ -1,0 +1,177 @@
+# 기본 설정 (성능 최적화 기능 비활성화)
+# 비교 테스트용 baseline 설정
+spring:
+  application:
+    name: moviebuddies
+
+  profiles:
+    active: baseline
+
+  # 기본 데이터베이스 설정 (최소 최적화)
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/moviebuddies}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10 # 기본값으로 축소
+      minimum-idle: 2 # 최소 유지
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA 최적화 기능 비활성화
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        use_sql_comments: false
+        jdbc:
+          batch_size: 1 # 배치 처리 비활성화
+          order_inserts: false # 쿼리 최적화 비활성화
+          order_updates: false
+    open-in-view: false
+
+  # Redis 연결은 유지하되 캐싱 완전 비활성화
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 4 # 연결 수 축소
+          max-idle: 2
+          min-idle: 0
+
+  # 캐싱 완전 비활성화
+  cache:
+    type: none
+
+  # 파일 업로드 기본 설정
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
+
+  websocket:
+    message-size-limit: 64KB
+    send-buffer-size-limit: 512KB
+    send-time-limit: 20000
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    property-naming-strategy: SNAKE_CASE
+
+# 기본 서버 설정 (최적화 기능 비활성화)
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api/v1
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  # 압축 비활성화
+  compression:
+    enabled: false
+  # HTTP/2 비활성화
+  http2:
+    enabled: false
+  # 기본 톰캣 설정
+  tomcat:
+    threads:
+      max: 50 # 기본 스레드 수
+      min-spare: 5
+    connection-timeout: 20000
+    max-connections: 200 # 연결 수 축소
+  error:
+    include-stacktrace: never
+    include-message: always
+
+# 기본 액추에이터 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+      probes:
+        enabled: true
+  health:
+    db:
+      enabled: true
+    redis:
+      enabled: true
+    diskspace:
+      enabled: true
+      threshold: 100MB
+
+# JWT 기본 설정
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000
+  issuer: moviebuddies
+
+# 파일 업로드 기본 경로
+file:
+  upload:
+    path: ${FILE_UPLOAD_PATH:/app/uploads}
+    profile-images: ${file.upload.path}/profile-images
+    chat-images: ${file.upload.path}/chat-images
+  max-size: 10MB
+  allowed-extensions: jpg,jpeg,png,gif,webp
+
+# CORS 설정
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+  max-age: 3600
+
+# API 문서화 설정
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+
+# TMDB 설정
+tmdb:
+  api-key: ${TMDB_API_KEY}
+  base-url: https://api.themoviedb.org/3
+  image-url: https://image.tmdb.org/t/p/w500
+
+# 기본 로깅 설정
+logging:
+  level:
+    com.moviebuddies: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.springframework.cache: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_PATH:/app/logs/application.log}
+    max-size: 100MB
+    max-history: 30
