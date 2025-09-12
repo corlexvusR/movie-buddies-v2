@@ -88,7 +88,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 인증 없이 접근 가능한 공개 엔드포인트
                         .requestMatchers("/auth/**").permitAll()    // 로그인, 회원가입
-                        .requestMatchers("/movie/**").permitAll()   // 영화 정보 (공개)
+                        .requestMatchers("/movies/**").permitAll()   // 영화 정보 (공개)
 
                         // Swagger UI 관련 경로
                         .requestMatchers("/swagger-ui/**").permitAll()
