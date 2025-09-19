@@ -1,7 +1,9 @@
 package com.moviebuddies.controller;
 
+import com.moviebuddies.dto.request.MovieFilterRequest;
 import com.moviebuddies.dto.request.MovieSearchRequest;
 import com.moviebuddies.dto.response.ApiResponse;
+import com.moviebuddies.dto.response.MovieAutocompleteResponse;
 import com.moviebuddies.dto.response.MovieListResponse;
 import com.moviebuddies.dto.response.MovieResponse;
 import com.moviebuddies.service.MovieService;
@@ -120,41 +122,119 @@ public class MovieController {
     }
 
     /**
-     * 복합 조건으로 영화 검색
-     * 제목, 장르, 배우명을 조합한 검색 지원
+     * 영화 필터링 (사이드바 필터용)
+     * 사용자가 영화 목록 페이지 좌측 사이드바에서 선택한 조건들로 실시간 필터링
+     * 장르, 개봉연도, 평점, 런타임, 상영상태 등 다중 조건 지원
      *
-     * @param searchRequest 검색 조건 (제목, 장르ID, 배우명)
+     * @param genreIds 필터링할 장르 ID 목록
+     * @param releaseYear 필터링할 개봉 연도
+     * @param minRating 최소 평점 (TMDB 기준)
+     * @param maxRating 최대 평점 (TMDB 기준)
+     * @param minRuntime 최소 상영시간 (분)
+     * @param maxRuntime 최대 상영시간 (분)
+     * @param nowPlaying 현재 상영중 여부
      * @param pageable 페이징 정보
-     * @return 검색 결과와 성공 메시지
+     * @return 필터 조건에 맞는 영화 목록과 성공 메시지
      */
-    @Operation(summary = "영화 검색", description = "다양한 조건으로 영화를 검색합니다.")
-    @PostMapping("/search")
-    public ResponseEntity<ApiResponse<Page<MovieListResponse>>> searchMovies(
-            @RequestBody @Valid MovieSearchRequest searchRequest,
+    @Operation(summary = "영화 필터링", description = "다양한 조건으로 영화를 필터링합니다.")
+    @GetMapping("/filter")
+    public ResponseEntity<ApiResponse<Page<MovieListResponse>>> filterMovies(
+            @RequestParam(required = false) List<Long> genreIds,
+            @RequestParam(required = false) Integer releaseYear,
+            @RequestParam(required = false) Double minRating,
+            @RequestParam(required = false) Double maxRating,
+            @RequestParam(required = false) Integer minRuntime,
+            @RequestParam(required = false) Integer maxRuntime,
+            @RequestParam(required = false) Boolean nowPlaying,
+            @RequestParam(defaultValue = "popularity") String sortBy,
             @PageableDefault(size = 20, sort = "popularity", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        log.info("영화 검색 요청 - 조건: {}", searchRequest);
+        Pageable sortedPageable = movieService.createSortedPageable(pageable, sortBy);
 
-        // 검색 조건 검증
-        if (!searchRequest.hasAnySearchCriteria()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("최소 하나의 검색 조건을 입력해주세요."));
+        MovieFilterRequest filterRequest = new MovieFilterRequest(
+                genreIds, releaseYear, minRating, maxRating,
+                minRuntime, maxRuntime, nowPlaying);
+
+        if (!filterRequest.hasFilters()) {
+            // 필터가 없으면 전체 목록 반환
+            Page<MovieListResponse> movies = movieService.getMovies(sortedPageable, sortBy);
+            return ResponseEntity.ok(ApiResponse.success("전체 영화 목록을 조회했습니다.", movies));
         }
 
-        // 평점 범위 검증
-        if (!searchRequest.isValidRatingRange()) {
+        if (!filterRequest.isValidRatingRange()) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("최소 평점은 최대 평점보다 작거나 같아야 합니다."));
         }
 
-        // 런타임 범위 검증
-        if (!searchRequest.isValidRuntimeRange()) {
+        if (!filterRequest.isValidRuntimeRange()) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("최소 런타임은 최대 런타임보다 작거나 같아야 합니다."));
         }
 
-        Page<MovieListResponse> movies = movieService.searchMovies(searchRequest, pageable);
+        Page<MovieListResponse> movies = movieService.filterMovies(filterRequest, sortedPageable);
+        return ResponseEntity.ok(ApiResponse.success("영화 필터링을 완료했습니다.", movies));
+    }
+
+
+    /**
+     * 영화 검색 (네비게이션 검색용)
+     * 네비게이션 바의 검색 입력창에서 키워드를 입력하여 영화나 배우를 검색
+     * 관련도 기반 정렬로 가장 일치하는 결과부터 표시
+     *
+     * @param keyword 검색할 키워드 (영화 제목 또는 배우 이름)
+     * @param searchType 검색 범위 (title: 제목만, actor: 배우만, all: 제목+배우)
+     * @param pageable 페이징 정보
+     * @return 검색 결과와 성공 메시지
+     */
+    @Operation(summary = "영화 검색", description = "키워드로 영화를 검색합니다.")
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<MovieListResponse>>> searchMovies(
+            @Parameter(description = "검색 키워드") @RequestParam String keyword,
+            @Parameter(description = "검색 타입 (title, actor, all)") @RequestParam(defaultValue = "all") String searchType,
+            @RequestParam(defaultValue = "popularity") String sortBy,
+            @PageableDefault(size = 20, sort = "popularity", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        Pageable sortedPageable = movieService.createSortedPageable(pageable, sortBy);
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("검색 키워드를 입력해주세요."));
+        }
+
+        MovieSearchRequest searchRequest = MovieSearchRequest.builder()
+                .keyword(keyword.trim())
+                .searchType(searchType)
+                .build();
+
+        if (!searchRequest.isValidSearchType()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("검색 타입은 title, actor, all 중 하나여야 합니다."));
+        }
+
+        Page<MovieListResponse> movies = movieService.searchMovies(searchRequest, sortedPageable);
         return ResponseEntity.ok(ApiResponse.success("영화 검색을 완료했습니다.", movies));
+    }
+
+    /**
+     * 영화/배우 자동완성 (실시간 검색어 제안)
+     * 사용자가 검색어를 입력하는 동안 실시간으로 관련 영화와 배우를 제안
+     * 최대 5개의 영화와 5개의 배우를 인기도 순으로 제안
+     *
+     * @param keyword 자동완성할 검색 키워드 (최소 2자)
+     * @return 추천 영화 목록과 배우 목록
+     */
+    @Operation(summary = "영화/배우 자동완성", description = "검색어에 대한 자동완성 제안을 제공합니다.")
+    @GetMapping("/autocomplete")
+    public ResponseEntity<ApiResponse<MovieAutocompleteResponse>> getAutocomplete(
+            @Parameter(description = "검색 키워드") @RequestParam String keyword) {
+
+        if (keyword == null || keyword.trim().length() < 2) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("검색어는 최소 2자 이상 입력해주세요."));
+        }
+
+        MovieAutocompleteResponse suggestions = movieService.getAutocomplete(keyword.trim());
+        return ResponseEntity.ok(ApiResponse.success("자동완성 제안을 조회했습니다.", suggestions));
     }
 
     /**

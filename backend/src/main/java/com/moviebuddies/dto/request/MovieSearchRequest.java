@@ -3,6 +3,7 @@ package com.moviebuddies.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Schema(description = "영화 검색 요청")
 public class MovieSearchRequest {
 
@@ -90,6 +92,22 @@ public class MovieSearchRequest {
     private Boolean nowPlaying;
 
     /**
+     * 검색 키워드
+     * 영화 제목이나 배우 이름을 검색할 때 사용
+     */
+    @Schema(description = "검색 키워드", example = "슈퍼맨")
+    @NotBlank(message = "검색 키워드는 필수입니다.")
+    @Size(min = 1, max = 100, message = "검색 키워드는 1자 이상 100자 이하여야 합니다.")
+    private String keyword;
+
+    /**
+     * 검색 타입
+     * title: 제목만 검색, actor: 배우만 검색, all: 제목과 배우 모두 검색
+     */
+    @Schema(description = "검색 타입 (title, actor, all)", example = "title")
+    private String searchType = "all";
+
+    /**
      * 복합 검색 조건 존재 여부 확인
      *
      * 제목, 장르, 배우명 중 하나라도 검색 조건이 있는지 확인
@@ -151,5 +169,15 @@ public class MovieSearchRequest {
             return minRuntime <= maxRuntime;
         }
         return true;
+    }
+
+    /**
+     * 검색 타입 유효성 검증
+     *
+     * @return 유효한 검색 타입이면 true, 그렇지 않으면 false
+     */
+    public boolean isValidSearchType() {
+        return searchType != null &&
+                (searchType.equals("title") || searchType.equals("actor") || searchType.equals("all"));
     }
 }

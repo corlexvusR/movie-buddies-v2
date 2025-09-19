@@ -122,4 +122,16 @@ public interface ActorRepository extends JpaRepository<Actor, Long> {
      * @return 존재하면 true
      */
     boolean existsByName(String name);
+
+    /**
+     * 자동완성용 배우 이름 검색
+     * 입력 키워드를 포함하는 배우 이름을 인기도 순으로 조회
+     * 자동완성 드롭다운에 표시할 용도로 제한된 개수만 반환
+     *
+     * @param keyword 자동완성할 키워드
+     * @param pageable 조회 개수 제한용 (보통 5개)
+     * @return 키워드를 포함하는 인기 배우 목록
+     */
+    @Query("SELECT a FROM Actor a WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY a.popularity DESC")
+    List<Actor> findTop5ByNameContainingIgnoreCase(@Param("keyword") String keyword, Pageable pageable);
 }

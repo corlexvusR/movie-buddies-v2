@@ -1,8 +1,11 @@
 package com.moviebuddies.service;
 
+import com.moviebuddies.dto.request.MovieFilterRequest;
 import com.moviebuddies.dto.request.MovieSearchRequest;
+import com.moviebuddies.dto.response.MovieAutocompleteResponse;
 import com.moviebuddies.dto.response.MovieListResponse;
 import com.moviebuddies.dto.response.MovieResponse;
+import com.moviebuddies.entity.Actor;
 import com.moviebuddies.entity.Genre;
 import com.moviebuddies.entity.Movie;
 import com.moviebuddies.exception.ResourceNotFoundException;
@@ -34,16 +37,31 @@ public class MovieService {
     private final ActorRepository actorRepository;
 
     /**
-     * 영화 목록 조회 (페이징 및 정렬 지원)
+     * 영화 목록 조회 
+     * 다양한 정렬 옵션 지원
+     * 정렬 기준에 따라 적절한 Repository 메서드를 선택하여 호출
+     * 캐시를 활용하여 동일한 조건의 반복 요청 시 성능 최적화
      *
-     * @param pageable 페이징 정보
+     * @param pageable 페이징 정보 (페이지 번호, 크기 등)
      * @param sortBy 정렬 기준 (popularity, title, release_date, vote_average, vote_count, runtime)
-     * @return 페이징된 영화 목록
+     * @return 정렬된 영화 목록 (List 형태로 캐싱됨)
      */
     @Cacheable(value = "movies", key = "#pageable.pageNumber + '_' + #pageable.pageSize + '_' + #sortBy")
     public List<MovieListResponse> getMovieList(Pageable pageable, String sortBy) {
-        // Page를 List로 변환해서 캐시
-        Page<Movie> moviePage = movieRepository.findAllByOrderByPopularityDesc(pageable);
+
+        // 정렬된 Pageable 생성
+        Pageable sortedPageable = createSortedPageable(pageable, sortBy);
+
+        // 정렬 기준에 따른 쿼리 실행
+        Page<Movie> moviePage = switch (sortBy != null ? sortBy.toLowerCase() : "popularity") {
+            case "title" -> movieRepository.findAllByOrderByTitleAsc(sortedPageable);
+            case "release_date" -> movieRepository.findAllByOrderByReleaseDateDesc(sortedPageable);
+            case "vote_average" -> movieRepository.findAllByOrderByVoteAverageDesc(sortedPageable);
+            case "vote_count" -> movieRepository.findAllByOrderByVoteCountDesc(sortedPageable);
+            case "runtime" -> movieRepository.findAllByOrderByRuntimeAsc(sortedPageable);
+            default -> movieRepository.findAllByOrderByPopularityDesc(sortedPageable);
+        };
+
         return moviePage.getContent().stream()
                 .map(MovieListResponse::from)
                 .collect(Collectors.toList());
@@ -114,29 +132,21 @@ public class MovieService {
     }
 
     /**
-     * 다양한 조건으로 영화 검색
-     * 제목, 장르, 배우명, 개봉연도, 평점, 런타임, 현재상영을 조합하여 복합 검색 지원
+     * 영화 검색 (네비게이션 검색용)
+     * 키워드를 기반으로 영화 제목이나 배우 이름에서 검색
      *
-     * @param searchRequest 검색  조건
+     * @param searchRequest 검색 키워드와 검색 타입을 담은 요청 객체
      * @param pageable 페이징 정보
-     * @return 검색 결과
+     * @return 검색 결과 영화 목록
      */
     public Page<MovieListResponse> searchMovies(MovieSearchRequest searchRequest, Pageable pageable) {
-        log.info("영화 검색 - 조건: {}", searchRequest);
+        log.info("영화 검색 - 키워드: {}, 타입: {}", searchRequest.getKeyword(), searchRequest.getSearchType());
 
-        // 검색 조건 처리
-        Page<Movie> movies = movieRepository.searchMovies(
-                searchRequest.getTitle(),
-                searchRequest.getGenreId(),
-                searchRequest.getActorName(),
-                searchRequest.getReleaseYear(),
-                searchRequest.getMinRating(),
-                searchRequest.getMaxRating(),
-                searchRequest.getMinRuntime(),
-                searchRequest.getMaxRuntime(),
-                searchRequest.getNowPlaying(),
-                pageable
-        );
+        Page<Movie> movies = switch (searchRequest.getSearchType().toLowerCase()) {
+            case "title" -> movieRepository.searchByTitle(searchRequest.getKeyword(), pageable);
+            case "actor" -> movieRepository.searchByActor(searchRequest.getKeyword(), pageable);
+            default -> movieRepository.searchByTitleAndActor(searchRequest.getKeyword(), pageable);
+        };
 
         return movies.map(MovieListResponse::from);
     }
@@ -275,5 +285,68 @@ public class MovieService {
         };
 
         return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+    }
+
+    /**
+     * 영화 필터링 (사이드바 필터용)
+     * 여러 조건을 조합하여 영화를 필터링하는 기능
+     * 각 조건은 선택사항이며, null인 경우 해당 조건은 무시됨
+     *
+     * @param filterRequest 필터링 조건들을 담은 요청 객체
+     * @param pageable 페이징 정보
+     * @return 필터 조건에 맞는 영화 목록
+     */
+    public Page<MovieListResponse> filterMovies(MovieFilterRequest filterRequest, Pageable pageable) {
+        log.info("영화 필터링 - 조건: {}", filterRequest);
+
+        Page<Movie> movies = movieRepository.filterMovies(
+                filterRequest.getGenreIds(),
+                filterRequest.getReleaseYear(),
+                filterRequest.getMinRating(),
+                filterRequest.getMaxRating(),
+                filterRequest.getMinRuntime(),
+                filterRequest.getMaxRuntime(),
+                filterRequest.getNowPlaying(),
+                pageable
+        );
+
+        return movies.map(MovieListResponse::from);
+    }
+
+    /**
+     * 검색어 자동완성 제안
+     * 사용자가 입력한 키워드를 포함하는 영화와 배우를 각각 최대 5개씩 제안
+     * 인기도 순으로 정렬하여 가장 관련성 높은 결과를 우선 표시
+     *
+     * @param keyword 자동완성할 검색 키워드
+     * @return 추천 영화와 배우 목록이 포함된 자동완성 응답
+     */
+    public MovieAutocompleteResponse getAutocomplete(String keyword) {
+        Pageable top5 = PageRequest.of(0, 5);
+
+        List<Movie> movies = movieRepository.findTop5ByTitleContainingIgnoreCase(keyword, top5);
+        List<Actor> actors = actorRepository.findTop5ByNameContainingIgnoreCase(keyword, top5);
+
+        List<MovieAutocompleteResponse.MovieSuggestion> movieSuggestions = movies.stream()
+                .map(movie -> MovieAutocompleteResponse.MovieSuggestion.builder()
+                        .id(movie.getId())
+                        .title(movie.getTitle())
+                        .posterImageUrl(movie.getPosterImageUrl())
+                        .releaseYear(movie.getReleaseDate() != null ? movie.getReleaseDate().getYear() : null)
+                        .build())
+                .collect(Collectors.toList());
+
+        List<MovieAutocompleteResponse.ActorSuggestion> actorSuggestions = actors.stream()
+                .map(actor -> MovieAutocompleteResponse.ActorSuggestion.builder()
+                        .id(actor.getId())
+                        .name(actor.getName())
+                        .profileImageUrl(actor.getProfileImageUrl())
+                        .build())
+                .collect(Collectors.toList());
+
+        return MovieAutocompleteResponse.builder()
+                .movies(movieSuggestions)
+                .actors(actorSuggestions)
+                .build();
     }
 }

@@ -77,6 +77,36 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     Page<Movie> findAllByOrderByReleaseDateDesc(Pageable pageable);
 
     /**
+     * 전체 영화 제목순 조회 (오름차순)
+     * 영화 목록을 가나다순(알파벳순)으로 정렬할 때 사용
+     * 사용자가 제목순 정렬을 선택했을 때 호출됨
+     *
+     * @param pageable 페이징 정보
+     * @return 제목 오름차순으로 정렬된 영화 목록
+     */
+    Page<Movie> findAllByOrderByTitleAsc(Pageable pageable);
+
+    /**
+     * 전체 영화 투표수순 조회 (내림차순)
+     * 많은 사용자들이 평가한 영화부터 표시할 때 사용
+     * TMDB의 vote_count 기준으로 정렬하여 평가 참여도가 높은 영화 우선 표시
+     *
+     * @param pageable 페이징 정보
+     * @return 투표수 내림차순으로 정렬된 영화 목록
+     */
+    Page<Movie> findAllByOrderByVoteCountDesc(Pageable pageable);
+
+    /**
+     * 전체 영화 런타임순 조회 (오름차순)
+     * 짧은 영화부터 긴 영화 순으로 정렬할 때 사용
+     * 상영시간을 기준으로 정렬하여 시간 제약이 있는 사용자에게 유용
+     *
+     * @param pageable 페이징 정보
+     * @return 런타임 오름차순으로 정렬된 영화 목록
+     */
+    Page<Movie> findAllByOrderByRuntimeAsc(Pageable pageable);
+
+    /**
      * 특정 장르의 영화 조회 (평점순 정렬)
      * 장르별 영화 필터링 기능에서 사용
      *
@@ -229,4 +259,95 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     List<Movie> findRecommendedMoviesByGenres(@Param("genreIds") List<Long> genreIds,
                                               @Param("excludeMovieId") Long excludeMovieId,
                                               Pageable pageable);
+
+    /**
+     * 필터링용 복합 쿼리
+     * 사이드바 필터 조건들을 조합하여 영화를 필터링
+     * 각 파라미터는 null 가능하며, null인 경우 해당 조건 무시
+     * LEFT JOIN을 사용하여 장르가 없는 영화도 포함
+     *
+     * @param genreIds 장르 ID 목록 (다중 선택 가능)
+     * @param releaseYear 개봉 연도
+     * @param minRating 최소 평점
+     * @param maxRating 최대 평점
+     * @param minRuntime 최소 런타임
+     * @param maxRuntime 최대 런타임
+     * @param nowPlaying 현재 상영중 여부
+     * @param pageable 페이징 정보
+     * @return 필터 조건에 맞는 영화 목록
+     */
+    @Query("SELECT DISTINCT m FROM Movie m " +
+            "LEFT JOIN m.genres g " +
+            "WHERE (:#{#genreIds == null || #genreIds.isEmpty()} = true OR g.id IN :genreIds) " +
+            "AND (:releaseYear IS NULL OR YEAR(m.releaseDate) = :releaseYear) " +
+            "AND (:minRating IS NULL OR m.voteAverage >= :minRating) " +
+            "AND (:maxRating IS NULL OR m.voteAverage <= :maxRating) " +
+            "AND (:minRuntime IS NULL OR m.runtime >= :minRuntime) " +
+            "AND (:maxRuntime IS NULL OR m.runtime <= :maxRuntime) " +
+            "AND (:nowPlaying IS NULL OR m.isNowPlaying = :nowPlaying)")
+    Page<Movie> filterMovies(@Param("genreIds") List<Long> genreIds,
+                             @Param("releaseYear") Integer releaseYear,
+                             @Param("minRating") Double minRating,
+                             @Param("maxRating") Double maxRating,
+                             @Param("minRuntime") Integer minRuntime,
+                             @Param("maxRuntime") Integer maxRuntime,
+                             @Param("nowPlaying") Boolean nowPlaying,
+                             Pageable pageable);
+
+    /**
+     * 제목 기준 검색 
+     * 영화 제목에서 키워드를 검색하여 영화 조회
+     * 영화 인기도순으로 정렬
+     *
+     * @param keyword 검색 키워드
+     * @param pageable 페이징 정보
+     * @return 인기도 기준으로 정렬된 영화 목록
+     */
+    @Query("SELECT DISTINCT m FROM Movie m " +
+            "WHERE LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "ORDER BY m.popularity DESC")
+    Page<Movie> searchByTitle(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 배우 기준 검색
+     * 배우 이름에서 키워드를 검색하여 해당 배우가 출연한 영화를 조회
+     * 영화 인기도순으로 정렬
+     *
+     * @param keyword 검색 키워드 (배우 이름)
+     * @param pageable 페이징 정보
+     * @return 해당 배우 출연 영화 목록 (영화 인기도 순)
+     */
+    @Query("SELECT DISTINCT m FROM Movie m " +
+            "JOIN m.actors a " +
+            "WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "ORDER BY m.popularity DESC")
+    Page<Movie> searchByActor(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 제목과 배우 통합 검색 (관련도 정렬)
+     * 영화 제목과 배우 이름을 모두 검색하여 영화 조회
+     * 영화 인기도 순으로 정렬
+     *
+     * @param keyword 검색 키워드
+     * @param pageable 페이징 정보
+     * @return 통합 검색 결과 (인기도 기준 정렬)
+     */
+    @Query("SELECT DISTINCT m FROM Movie m " +
+            "LEFT JOIN m.actors a " +
+            "WHERE LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "   OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "ORDER BY m.popularity DESC")
+    Page<Movie> searchByTitleAndActor(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 자동완성용 영화 제목 검색
+     * 입력 키워드를 포함하는 영화 제목을 인기도 순으로 조회
+     * 자동완성 드롭다운에 표시할 용도로 제한된 개수만 반환
+     *
+     * @param keyword 자동완성할 키워드
+     * @param pageable 조회 개수 제한용 (보통 5개)
+     * @return 키워드를 포함하는 인기 영화 목록
+     */
+    @Query("SELECT m FROM Movie m WHERE LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) ORDER BY m.popularity DESC")
+    List<Movie> findTop5ByTitleContainingIgnoreCase(@Param("keyword") String keyword, Pageable pageable);
 }
