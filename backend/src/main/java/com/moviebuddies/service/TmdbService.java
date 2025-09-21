@@ -109,7 +109,7 @@ public class TmdbService {
      * 1. 지정된 페이지 수만큼 반복 호출
      * 2. 각 페이지의 영화 목록 파싱
      * 3. processMovieData()로 개별 영화 처리
-     * 4. API 호출 제한을 위해 0.25초 대기 (초당 4회 제한)
+     * 4. API 호출 제한을 위해 0.04초 대기 (초당 25회 제한)
      *
      * @param totalPages 동기화할 총 페이지 수 (페이지당 20개 영화)
      */
@@ -137,8 +137,8 @@ public class TmdbService {
                 }
 
                 // API 호출 제한 고려
-                // 공식 문서에 따르면 API 속도 제한은 비활성화되었지만 여전히 상한선은 존재(초당 50건의 요청 범위 어딘가)하므로 안전하게 초당 10회로 제한
-                Thread.sleep(100);
+                // 공식 문서에 따르면 API 속도 제한은 비활성화되었지만 여전히 상한선은 존재(초당 50건의 요청 범위 어딘가)하므로 안전하게 초당 25회로 제한
+                Thread.sleep(40);
 
             } catch (Exception e) {
                 log.error("TMDB 인기 영화 데이터 동기화 실패 - 페이지: {}", page, e);
@@ -177,7 +177,7 @@ public class TmdbService {
                     }
                 }
 
-                Thread.sleep(250);
+                Thread.sleep(40);
 
             } catch (Exception e) {
                 log.error("TMDB 현재 상영중인 영화 데이터 동기화 실패 - 페이지: {}", page, e);
@@ -407,7 +407,7 @@ public class TmdbService {
                 syncMovieDetailsAndCast(movie.getId());
 
                 try {
-                    Thread.sleep(250); // API 호출 제한 고려
+                    Thread.sleep(40); // API 호출 제한 고려
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
