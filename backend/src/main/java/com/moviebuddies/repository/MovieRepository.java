@@ -107,15 +107,15 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     Page<Movie> findAllByOrderByRuntimeAsc(Pageable pageable);
 
     /**
-     * 특정 장르의 영화 조회 (평점순 정렬)
+     * 특정 장르의 영화 조회
      * 장르별 영화 필터링 기능에서 사용
      *
      * @param genreId 장르 ID
      * @param pageable 페이징 정보
-     * @return 해당 장르의 영화 목록 (평점순)
+     * @return 해당 장르의 영화 목록
      */
-    @Query("SELECT m FROM Movie m JOIN m.genres g WHERE g.id = :genreId ORDER BY m.voteAverage DESC")
-    Page<Movie> findByGenreIdOrderByVoteAverageDesc(@Param("genreId") Long genreId, Pageable pageable);
+    @Query("SELECT m FROM Movie m JOIN m.genres g WHERE g.id = :genreId")
+    Page<Movie> findByGenreId(@Param("genreId") Long genreId, Pageable pageable);
 
     /**
      * 특정 장르의 인기 영화 TOP N
@@ -263,8 +263,8 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     /**
      * 필터링용 복합 쿼리
      * 사이드바 필터 조건들을 조합하여 영화를 필터링
-     * 각 파라미터는 null 가능하며, null인 경우 해당 조건 무시
-     * LEFT JOIN을 사용하여 장르가 없는 영화도 포함
+     * 장르가 있을 때는 합집합으로 동작
+     * 장르가 없을 때는 다른 조건만으로 필터링
      *
      * @param genreIds 장르 ID 목록 (다중 선택 가능)
      * @param releaseYear 개봉 연도
@@ -304,8 +304,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
      * @return 인기도 기준으로 정렬된 영화 목록
      */
     @Query("SELECT DISTINCT m FROM Movie m " +
-            "WHERE LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "ORDER BY m.popularity DESC")
+            "WHERE LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Movie> searchByTitle(@Param("keyword") String keyword, Pageable pageable);
 
     /**
@@ -319,8 +318,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
      */
     @Query("SELECT DISTINCT m FROM Movie m " +
             "JOIN m.actors a " +
-            "WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "ORDER BY m.popularity DESC")
+            "WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Movie> searchByActor(@Param("keyword") String keyword, Pageable pageable);
 
     /**
@@ -335,8 +333,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     @Query("SELECT DISTINCT m FROM Movie m " +
             "LEFT JOIN m.actors a " +
             "WHERE LOWER(m.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "   OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "ORDER BY m.popularity DESC")
+            "   OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Movie> searchByTitleAndActor(@Param("keyword") String keyword, Pageable pageable);
 
     /**

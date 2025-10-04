@@ -242,6 +242,7 @@ public class MovieController {
      * 평점 순으로 정렬
      *
      * @param genreId 장르 고유 ID
+     * @param sortBy 정렬 기준
      * @param pageable 페이징 정보
      * @return 해당 장르의 영화 목록과 성공 메시지
      */
@@ -249,11 +250,15 @@ public class MovieController {
     @GetMapping("/genre/{genreId}")
     public ResponseEntity<ApiResponse<Page<MovieListResponse>>> getMoviesByGenre(
             @Parameter(description = "장르 ID") @PathVariable Long genreId,
+            @RequestParam(defaultValue = "vote_average") String sortBy,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        log.info("장르별 영화 조회 요청 - 장르 ID: {}", genreId);
+        log.info("장르별 영화 조회 요청 - 장르 ID: {}, 정렬: {}", genreId, sortBy);
 
-        Page<MovieListResponse> movies = movieService.getMoviesByGenre(genreId, pageable);
+        // sortBy에 따라 정렬된 Pageable 생성
+        Pageable sortedPageable = movieService.createSortedPageable(pageable, sortBy);
+
+        Page<MovieListResponse> movies = movieService.getMoviesByGenre(genreId, sortedPageable);
 
         return ResponseEntity.ok(ApiResponse.success("장르별 영화 목록을 조회했습니다.", movies));
     }

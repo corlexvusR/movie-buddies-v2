@@ -160,7 +160,6 @@ public class MovieService {
      * @return 해당 장르의 영화 목록
      * @throws ResourceNotFoundException 장르를 찾을 수 없는 경우
      */
-    @Cacheable(value = "movieByGenre", key = "#genreId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<MovieListResponse> getMoviesByGenre(Long genreId, Pageable pageable) {
         log.info("장르별 영화 조회 - 장르 ID: {}", genreId);
 
@@ -168,7 +167,7 @@ public class MovieService {
         genreRepository.findById(genreId)
                 .orElseThrow(() -> new ResourceNotFoundException("장르", genreId));
 
-        Page<Movie> movies = movieRepository.findByGenreIdOrderByVoteAverageDesc(genreId, pageable);
+        Page<Movie> movies = movieRepository.findByGenreId(genreId, pageable);
         return movies.map(MovieListResponse::from);
     }
 
