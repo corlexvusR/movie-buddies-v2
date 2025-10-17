@@ -5,6 +5,7 @@ import com.moviebuddies.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -90,6 +91,12 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()    // 로그인, 회원가입
                         .requestMatchers("/movies/**").permitAll()   // 영화 정보 (공개)
 
+                        // 리뷰 조회는 공개, 작성/수정/삭제는 인증 필요
+                        .requestMatchers(HttpMethod.GET, "/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/reviews/**").authenticated()
+
                         // Swagger UI 관련 경로
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/swagger-ui.html").permitAll()
@@ -108,7 +115,6 @@ public class SecurityConfig {
                         // 인증이 필요한 보호된 엔드포인트
                         .requestMatchers("/users/**").authenticated()   // 사용자 관리
                         .requestMatchers("/friends/**").authenticated() // 친구 관리
-                        .requestMatchers("/reviews/**").authenticated() // 리뷰 관리
                         .requestMatchers("/chat/**").authenticated()    // 채팅
                         .requestMatchers("/bookmarks/**").authenticated()   // 북마크
                         .requestMatchers("/admin/**").authenticated()   // 관리자
