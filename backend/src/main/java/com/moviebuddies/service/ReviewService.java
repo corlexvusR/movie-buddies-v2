@@ -43,7 +43,7 @@ public class ReviewService {
      * @param pageable 페이징 정보
      * @return 영화의 리뷰 목록 (페이징)
      */
-    @Cacheable(value = "movieReviews", key = "#movieId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
+//    @Cacheable(value = "movieReviews", key = "#movieId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<ReviewResponse> getReviewsByMovie(Long movieId, Pageable pageable) {
         log.info("영화 리뷰 조회 - 영화 ID: {}", movieId);
 
@@ -61,7 +61,7 @@ public class ReviewService {
      * @param pageable 페이징 정보
      * @return 사용자의 리뷰 목록 (페이징)
      */
-    @Cacheable(value = "userReviews", key = "#username + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
+//    @Cacheable(value = "userReviews", key = "#username + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<ReviewResponse> getReviewsByUser(String username, Pageable pageable) {
         log.info("사용자 리뷰 조회 - 사용자: {}", username);
 
@@ -81,7 +81,7 @@ public class ReviewService {
      * @throws BusinessException 중복 리뷰 또는 유효하지 않은 평점
      */
     @Transactional
-    @CacheEvict(value = {"movieReviews", "userReviews", "movieDetail"}, allEntries = true)
+//    @CacheEvict(value = {"movieReviews", "userReviews", "movieDetail"}, allEntries = true)
     public ReviewResponse createReview(Long userId, ReviewRequest request) {
         log.info("리뷰 작성 - 사용자 ID: {}, 영화 ID: {}", userId, request.getMovieId());
 
@@ -124,7 +124,7 @@ public class ReviewService {
      * @throws BusinessException 유효하지 않은 평점
      */
     @Transactional
-    @CacheEvict(value = {"movieReviews", "userReviews", "movieDetail"}, allEntries = true)
+//    @CacheEvict(value = {"movieReviews", "userReviews", "movieDetail"}, allEntries = true)
     public ReviewResponse updateReview(Long userId, Long movieId, ReviewRequest request) {
         log.info("리뷰 수정 - 사용자 ID: {}, 영화 ID: {}", userId, movieId);
 
@@ -153,7 +153,7 @@ public class ReviewService {
      * @throws BusinessException 권한이 없거나 영화 ID가 불일치하는 경우
      */
     @Transactional
-    @CacheEvict(value = {"movieReviews", "userReviews", "movieDetail"}, allEntries = true)
+//    @CacheEvict(value = {"movieReviews", "userReviews", "movieDetail"}, allEntries = true)
     public void deleteReview(Long userId, Long movieId, Long reviewId) {
         log.info("리뷰 삭제 - 사용자 ID: {}, 영화 ID: {}, 리뷰 ID: {}", userId, movieId, reviewId);
 
@@ -194,7 +194,7 @@ public class ReviewService {
      * @param movieId 영화 ID
      * @return 평점별 리뷰 수 분포 데이터
      */
-    @Cacheable(value = "movieRatingDistribution", key = "#movieId")
+//    @Cacheable(value = "movieRatingDistribution", key = "#movieId")
     public MovieRatingDistributionResponse getMovieRatingDistribution(Long movieId) {
         log.info("영화 평점 분포 조회 - 영화 ID: {}", movieId);
         
